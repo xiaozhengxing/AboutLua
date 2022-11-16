@@ -286,7 +286,7 @@ typedef struct GCObject {
 
 #define iscollectable(o)	(rawtt(o) & BIT_ISCOLLECTABLE)
 
-/* mark a tag as collectable */
+/* mark a tag as collectable. 给原本的tt加上 collectable tag(bit 6) */
 #define ctb(t)			((t) | BIT_ISCOLLECTABLE)
 
 #define gcvalue(o)	check_exp(iscollectable(o), val_(o).gc)
@@ -574,9 +574,9 @@ typedef struct Proto {
 
 
 /* Variant tags for functions */
-#define LUA_VLCL	makevariant(LUA_TFUNCTION, 0)  /* Lua closure */
-#define LUA_VLCF	makevariant(LUA_TFUNCTION, 1)  /* light C function */
-#define LUA_VCCL	makevariant(LUA_TFUNCTION, 2)  /* C closure */
+#define LUA_VLCL	makevariant(LUA_TFUNCTION, 0)  /* Lua closure.加了variant tag */
+#define LUA_VLCF	makevariant(LUA_TFUNCTION, 1)  /* light C function. 加了variant tag */
+#define LUA_VCCL	makevariant(LUA_TFUNCTION, 2)  /* C closure. 加了variant tag*/
 
 #define ttisfunction(o)		checktype(o, LUA_TFUNCTION)
 #define ttisLclosure(o)		checktag((o), ctb(LUA_VLCL))
@@ -594,6 +594,7 @@ typedef struct Proto {
 
 #define fvalueraw(v)	((v).f)
 
+//obj: TValue*,x: LClosure. 将obj的gc指向x,且更改obj的类型为lua Closure
 #define setclLvalue(L,obj,x) \
   { TValue *io = (obj); LClosure *x_ = (x); \
     val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_VLCL)); \

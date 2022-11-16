@@ -147,6 +147,8 @@ void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelatio
         
 }
 
+
+//xzxtodo
 void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_State *L, ObjectRelationshipReport cb)
 {
     GCObject *p = G(L)->allgc;
@@ -155,20 +157,20 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_
     const char *name;
     while(p != NULL)
     {
-        if(p->tt == LUA_TTABLE)
+        if(p->tt == LUA_TTABLE)//处理每个table
         {
             Table *h = gco2t(p);
             report_table(result, h, cb);
         }
 #if LUA_VERSION_NUM >= 504
-        else if(p->tt == LUA_VLCL)
+        else if(p->tt == LUA_VLCL)//处理每个lua closure
 #else
-        else if(p->tt == LUA_TLCL)// Lua closure
+        else if(p->tt == LUA_TLCL)
 #endif
         {
             LClosure *cl = gco2lcl(p);
             lua_lock(L);
-            setclLvalue(L, &(L->top->val), cl);
+            setclLvalue(L, &(L->top->val), cl);//将栈顶top指向lua closure
             api_incr_top(L);
             lua_unlock(L);
 
