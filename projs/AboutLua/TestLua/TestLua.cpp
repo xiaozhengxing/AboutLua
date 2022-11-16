@@ -31,7 +31,7 @@ extern "C"
 
 enum  RelationShipType
 {
-    RelationShipType_TableValue1 = 1,//table[key]是另一个table, key为string
+    RelationShipType_TableValue1 = 1,//table[key]是另一个table, key为string或其他类型
     RelationShipType_NumberKeyTableValue2 = 2,//table[key]是另一个table, key为number(1数组array里面的值, 2 key本身就是数字)
     RelationShipType_KeyOfTable3 = 3,//table[key]时, key是另一个table
     RelationShipType_Metatable4 = 4,//table的元表metatable
@@ -70,6 +70,7 @@ typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> result,
 
 
 //从根节点开始,遍历整个链表,如果是table, 执行函数cb
+//最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
 void xlua_report_table_size(Data &data, lua_State *L, TableSizeReport cb, int fast)
 {
     GCObject *p =G(L)->allgc;
@@ -78,13 +79,13 @@ void xlua_report_table_size(Data &data, lua_State *L, TableSizeReport cb, int fa
         if(p->tt == LUA_TTABLE)
         {
             Table *h = gco2t(p);
-            cb(data, h, table_size(h, fast));
+            cb(data, h, table_size(h, fast));//data.TableSizes[(intptr_p)h] = table_size(h, fast)
         }
         p = p->next;
     }
 }
 
-//遍历表table中的所有key-value,只要key-value有一个也是table,则执行函数cb
+//遍历表table中的所有key-value,只要key-value有任意一个是table,则执行函数cb
 void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelationshipReport cb)
 {
     Node *n, *limit = gnodelast(h);
@@ -92,7 +93,7 @@ void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelatio
 
     if(h->metatable != NULL)
     {
-        cb(result, h, h->metatable, RelationShipType_Metatable4, NULL, 0, NULL);
+        cb(result, h, h->metatable, RelationShipType_Metatable4, NULL, 0, NULL);//处理table的元表metatable
     }
 #if LUA_VERSION_NUM >= 504
     for(int i = 0; i < h->alimit; i++)
@@ -116,32 +117,31 @@ void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelatio
 #else
             const TValue *key = gkey(n);
 #endif
-            if(ttistable(key))//key为table
+            if(ttistable(key))
             {
-                cb(result, h, gcvalue(key), RelationShipType_KeyOfTable3, NULL, 0, NULL);   
+                cb(result, h, gcvalue(key), RelationShipType_KeyOfTable3, NULL, 0, NULL);//table中的散列表部分, node.key是一个table   
             }
 
             const TValue *value = gval(n);
             if(ttistable(value))//value为table
             {
-                if(ttisstring(key))//key为talbe
+                if(ttisstring(key))//key为string
                 {
-                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, getstr(tsvalue(key)), 0, NULL);
+                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, getstr(tsvalue(key)), 0, NULL);//table中的散列表部分val=node[key]是一个table, key为string
                 }
                 else if(ttisnumber(key))//key为number
                 {
-                    cb(result, h, gcvalue(value), RelationShipType_NumberKeyTableValue2, NULL, nvalue(key), NULL);
+                    cb(result, h, gcvalue(value), RelationShipType_NumberKeyTableValue2, NULL, nvalue(key), NULL);//table中的散列表部分val=node[key]是一个table, key为number
                 }
                 else//key为其他类型
                 {
 #if LUA_VERSION_NUM >= 504
-                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, novariant(key->tt_), NULL);
+                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, novariant(key->tt_), NULL);//table中的散列表部分val=node[key]是一个table, key为其他类型, 这里传入key类型的低4位
 #else
                     cb(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, ttnov(key), NULL);//
 #endif
                 }
             }
-            
         }
     }
         
@@ -489,6 +489,8 @@ void main()
         cout << "C Call Lua, result = " << fValue << endl;
     }
 
+    //lua_pushboolean(L, true);
+    //lua_setglobal(L, "shutdown_fast_leak");
 
     lua_getglobal(L, "update");
     iRet = lua_pcall(L, 0, 0, 0);
@@ -499,6 +501,11 @@ void main()
         lua_close(L);
         return;
     }
+
+    
+    
+    
+    
 
     //lua内存分析
     /*
