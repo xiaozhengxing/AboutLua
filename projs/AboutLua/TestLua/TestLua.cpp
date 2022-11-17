@@ -163,7 +163,7 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_
             report_table(result, h, cb);
         }
 #if LUA_VERSION_NUM >= 504
-        else if(p->tt == LUA_VLCL)//处理每个lua closure
+        else if(p->tt == LUA_VLCL)//处理每个lua closure中的 upvalue
 #else
         else if(p->tt == LUA_TLCL)
 #endif
@@ -176,20 +176,20 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_
 
             lua_pushvalue(L, -1);
 
-            lua_getinfo(L, ">S", &ar);
+            lua_getinfo(L, ">S", &ar);//获取lua closure 的函数信息, 执行完后,pop (lua closure)
 
             for(int i = 0; ;i++)
             {
-                name = lua_getupvalue(L, -1, i);
+                name = lua_getupvalue(L, -1, i);//如获取成功,将upvalue(TValue*) push到栈顶, 返回upvalue的名字
                 if(name == NULL)
                     break;
 
                 const void *pv = lua_topointer(L, -1);
                 if(*name != '\0' && LUA_TTABLE == lua_type(L, -1))
                 {
-                    cb(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);
+                    cb(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);//传入src文件名和行号?问题,如果是dostring,那这个src是什么?{short_src为[C], linedefined为-1}
                 }
-                lua_pop(L, 1);
+                lua_pop(L, 1);//pop栈顶的 upvalue
             }
             lua_pop(L, 1);
         }
@@ -463,6 +463,7 @@ void main()
     registryPointer = (intptr_t)xlua_registry_pointer(L);
     globalPointer = (intptr_t)xlua_global_pointer(L);
 
+    
 
     int iRet = luaL_dofile(L, "test3.lua");
     if (iRet)
@@ -471,6 +472,20 @@ void main()
         return;
     }
 
+    iRet = luaL_dostring(L, "function fun1() print(1234) end  fun1()");
+    if (iRet)
+    {
+        const char* pErrorMsg = lua_tostring(L, -1);
+        cout << pErrorMsg << endl;
+        lua_close(L);
+        return;
+    }
+
+    lua_getglobal(L, "myAdd");
+    lua_Debug ar;
+    lua_getinfo(L, ">S", &ar);
+    cout << ar.short_src << "," << ar.linedefined << endl;
+    
     //2、C调用Lua
     lua_getglobal(L, "myAdd");
     lua_pushnumber(L, 10);
