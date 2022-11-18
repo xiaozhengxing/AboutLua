@@ -327,8 +327,10 @@ public:
     static Data getSizeReport(lua_State *L)
     {
         Data data = Data();
-        data.Memory = -1;
+        data.Memory = lua_gc(L, LUA_GCCOUNT, 0);
 
+        //从根节点开始,遍历整个链表,如果是table, 执行函数cb
+        //最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
         xlua_report_table_size(data, L, TableSizeReport_Func, 0);
         return data;
     }
@@ -348,13 +350,16 @@ public:
         return result;
     }
 
-
+    
+    //返回一个新的Data, 从根节点遍历所有table, 最终
+    //data.TableSizes[(intptr_p)h] = table_size(h, fast)
     static Data StartMemoryLeakCheck(lua_State *L)
     {
-        lua_gc(L, 2, 0);
+        lua_gc(L, 2, 0);//LUA_GCCOLLECT, performs a full garbage-collection cycle
         return getSizeReport(L);
     }
 
+    //查找size变大的table{在from和to中都存在}
     static Data findGrowing(Data from, Data to)
     {
         Data result;
@@ -363,7 +368,7 @@ public:
         {
             intptr_t key = iter->first;
             int newSize = iter->second;
-            if(from.TableSizes.find(key) != from.TableSizes.end())
+            if(from.TableSizes.find(key) != from.TableSizes.end())//新增的不用管,这里只处理增加了的
             {
                 int oldSize = from.TableSizes[key];
                 if(oldSize < newSize)//有增长
@@ -375,15 +380,17 @@ public:
         return result;
     }
 
+    //返回有大小有增长的table信息
     static Data MemoryLeakCheck(lua_State *L, Data &last)
     {
-        lua_gc(L, 2, 0);
+        lua_gc(L, 2, 0);//LUA_GCCOLLECT, performs a full garbage-collection cycle
         return findGrowing(last, getSizeReport(L));
     }
 
+    //xzxtodo
     static string MemoryLeakReport(lua_State *L, Data data, int maxLevel = 10)
     {
-        lua_gc(L, 2, 0);
+        lua_gc(L, 2, 0);//LUA_GCCOLLECT, performs a full garbage-collection cycle
         auto relationshipInfo = getRelationship(L);
 
         string sb;
