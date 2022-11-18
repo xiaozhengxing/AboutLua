@@ -147,8 +147,9 @@ void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelatio
         
 }
 
-
-//xzxtodo
+//从根节点开始, 遍历每个table和lua Closure
+//1 table: 对table中的key-value进行遍历,只要有table,都执行cb
+//2 lua Closure:对lua函数的所有upvalue,执行cb
 void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_State *L, ObjectRelationshipReport cb)
 {
     GCObject *p = G(L)->allgc;
@@ -187,7 +188,7 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_
                 const void *pv = lua_topointer(L, -1);
                 if(*name != '\0' && LUA_TTABLE == lua_type(L, -1))
                 {
-                    cb(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);//传入src文件名和行号?问题,如果是dostring,那这个src是什么?{short_src为[C], linedefined为-1}
+                    cb(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);//lua closure中的upvalue. 传入src文件名和行号?问题,如果是dostring,那这个src是什么?{short_src为[C], linedefined为-1}
                 }
                 lua_pop(L, 1);//pop栈顶的 upvalue
             }
@@ -217,7 +218,7 @@ class Data
 {
 public:
     int Memory = 0;
-    map<intptr_t, int> TableSizes = map<intptr_t, int>();
+    map<intptr_t, int> TableSizes = map<intptr_t, int>();//<table的地址, table的大小>
 public:
     string ToString()
     {
@@ -243,9 +244,6 @@ public:
 };
 
 
-
-
-
 void TableSizeReport_Func (Data &data, const void *p, int size)
 {
     data.TableSizes[(intptr_t)p] = size;
@@ -256,20 +254,21 @@ string UNKNOW_KEY = "???";
 string METATABLE_KEY = "__metatable";
 string KEY_OF_TABLE = "!KEY!";
 
+//使用type和几个信息, 返回一个string key
 static string makeKey(RelationShipType type, const char *key, double d, const char *key2)
 {
     switch (type)
     {
-    case RelationShipType_TableValue1:
-        return key == NULL? "LuaTypes" + to_string(d):key;
-    case RelationShipType_NumberKeyTableValue2:
+    case RelationShipType_TableValue1://table中的散列表部分 node[key]是一个table, 1 key为其他类型, 2 key为string
+        return key == NULL? "LuaTypes(" + to_string(d)+")" : key;
+    case RelationShipType_NumberKeyTableValue2://table中的散列表部分 node[key]是一个table, key为number
         return "[" + to_string(d) + "]";
-    case RelationShipType_KeyOfTable3:
+    case RelationShipType_KeyOfTable3://table中的散列表部分, node.key是一个table
         return KEY_OF_TABLE;
-    case RelationShipType_Metatable4:
+    case RelationShipType_Metatable4://table的元表metatable
         return KEY_OF_TABLE;
-    case RelationShipType_UpVALUE5:
-        return "Upvalue-" + string(key) + ": local " + string(key2); 
+    case RelationShipType_UpVALUE5://lua closure中的upvalue, short_src, linedefined
+        return "Upvalue-" + string(key) + ":local " + string(key2); 
     }
 
     return UNKNOW_KEY;
