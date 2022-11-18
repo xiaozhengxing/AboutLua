@@ -458,8 +458,7 @@ public:
                     break;                    
                 }
             }
-
-            //todo, 处理sb
+            
             //因为层级关系, maxLevel, infos还可能存在回溯不到最顶部的parent的节点
             for(auto iterInfo = infos.begin(); iterInfo != infos.end(); ++iterInfo)
             {
@@ -496,12 +495,37 @@ void main()
     registryPointer = (intptr_t)xlua_registry_pointer(L);
     globalPointer = (intptr_t)xlua_global_pointer(L);
 
-    
 
-    int iRet = luaL_dofile(L, "test3.lua");
+    int iRet = luaL_dofile(L, "test1.lua");
     if (iRet)
     {
-        cout << "load file error " << iRet << endl;
+        cout << "load file test1.lua error " << iRet << endl;
+        const char* pErrorMsg = lua_tostring(L, -1);
+        cout << pErrorMsg << endl;
+        lua_close(L);
+        
+        return;
+    }
+
+    iRet = luaL_dofile(L, "test2.lua");
+    if (iRet)
+    {
+        cout << "load file test2.lua error " << iRet << endl;
+        const char* pErrorMsg = lua_tostring(L, -1);
+        cout << pErrorMsg << endl;
+        lua_close(L);
+        
+        return;
+    }
+
+    iRet = luaL_dofile(L, "test3.lua");
+    if (iRet)
+    {
+        cout << "load file test3.lua error " << iRet << endl;
+        const char* pErrorMsg = lua_tostring(L, -1);
+        cout << pErrorMsg << endl;
+        lua_close(L);
+        
         return;
     }
 
@@ -514,10 +538,12 @@ void main()
         return;
     }
 
+    /* 获取debug信息
     lua_getglobal(L, "myAdd");
     lua_Debug ar;
     lua_getinfo(L, ">S", &ar);
     cout << ar.short_src << "," << ar.linedefined << endl;
+    */
     
     //2、C调用Lua
     lua_getglobal(L, "myAdd");
@@ -539,9 +565,15 @@ void main()
         cout << "C Call Lua, result = " << fValue << endl;
     }
 
-    //lua_pushboolean(L, true);
-    //lua_setglobal(L, "shutdown_fast_leak");
+    
+    /*
+    lua_pushboolean(L, true);
+    lua_setglobal(L, "shutdown_fast_leak");
+    */
+    
 
+    
+/* 执行update函数
     lua_getglobal(L, "update");
     iRet = lua_pcall(L, 0, 0, 0);
     if (iRet)
@@ -551,7 +583,7 @@ void main()
         lua_close(L);
         return;
     }
-
+*/
     
     
     
