@@ -66,7 +66,7 @@ static int table_size(Table *h, int fast)
 class Data;
 struct RefInfo;
 typedef void (*TableSizeReport) (Data &data, const void *p, int size);
-typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2);
+typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2);
 
 
 //从根节点开始,遍历整个链表,如果是table, 执行函数cb
@@ -86,7 +86,7 @@ void xlua_report_table_size(Data &data, lua_State *L, TableSizeReport cb, int fa
 }
 
 //遍历表table中的所有key-value,只要key-value有任意一个是table,则执行函数cb
-void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelationshipReport cb)
+void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelationshipReport cb)
 {
     Node *n, *limit = gnodelast(h);
     unsigned int i;
@@ -150,7 +150,7 @@ void report_table(map<intptr_t, vector<RefInfo>> result, Table *h, ObjectRelatio
 //从根节点开始, 遍历每个table和lua Closure
 //1 table: 对table中的key-value进行遍历,只要有table,都执行cb
 //2 lua Closure:对lua函数的所有upvalue,执行cb
-void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> result, lua_State *L, ObjectRelationshipReport cb)
+void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua_State *L, ObjectRelationshipReport cb)
 {
     GCObject *p = G(L)->allgc;
     lua_Debug ar;
@@ -261,7 +261,7 @@ static string makeKey(RelationShipType type, const char *key, double d, const ch
     {
     case RelationShipType_TableValue1://table中的散列表部分 node[key]是一个table, 1 key为其他类型, 2 key为string
         return key == NULL? "LuaTypes(" + to_string(d)+")" : key;
-    case RelationShipType_NumberKeyTableValue2://table中的散列表部分 node[key]是一个table, key为number
+    case RelationShipType_NumberKeyTableValue2://1 table中的散列表部分 node[key]是一个table, key为number; 2 table中的数组部分里面存在table
         return "[" + to_string(d) + "]";
     case RelationShipType_KeyOfTable3://table中的散列表部分, node.key是一个table
         return KEY_OF_TABLE;
@@ -277,7 +277,7 @@ static string makeKey(RelationShipType type, const char *key, double d, const ch
 struct RefInfo
 {
     string key;
-    bool HasNext;//是否有父结点(表)
+    bool HasNext;//是否有父结点(表)[不包括_R和_G]
     intptr_t parent;
     bool isNumberKey;
 };
@@ -286,7 +286,8 @@ struct RefInfo
 intptr_t registryPointer;
 intptr_t globalPointer;
 
-void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2)
+//result[child].push_back(new RefInfo), 注意这里是以intptr_t(child)为key
+void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2)
 {
     if(result.find((intptr_t)child) == result.end())
     {
@@ -296,15 +297,16 @@ void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> result, const 
     vector<RefInfo> infos = result[(intptr_t)child];
     string keyOfRef = makeKey(type, key, d, key2);
 
+    //lua closure没有父节点
     bool hasNext = type != RelationShipType_UpVALUE5;
-    if(hasNext)
+    if(hasNext)//
     {
-        if((intptr_t)parent == registryPointer)
+        if((intptr_t)parent == registryPointer)//_R
         {
             keyOfRef = "_R." + keyOfRef;
             hasNext = false;
         }
-        else if((intptr_t)parent == globalPointer)
+        else if((intptr_t)parent == globalPointer)//_G
         {
             keyOfRef = "_G." + keyOfRef;
             hasNext = false;
@@ -331,13 +333,14 @@ public:
         return data;
     }
 
-    static map<intptr_t, vector<RefInfo>> getRelationship(lua_State *L)//获取一个全局的关系图?
+    static map<intptr_t, vector<RefInfo>> getRelationship(lua_State *L)//获取一个全局的关系图
     {
-        map<intptr_t, vector<RefInfo>> result;
+        map<intptr_t, vector<RefInfo>> result;//<intptr_t(child), vector<RefInfo>>, 注意这里是以intptr_t(child)为key
         int top = lua_gettop(L);
         intptr_t registryPointer = (intptr_t)xlua_registry_pointer(L);
         intptr_t globalPointer = (intptr_t)xlua_global_pointer(L);
 
+        //从根节点开始, 遍历每个table和lua closure,并记录节点之间的关系(RefInfo)
         xlua_report_object_relationship(result, L, ObjectRelationshipReport_Func);
 
         lua_settop(L, top);
