@@ -335,7 +335,9 @@ public:
         return data;
     }
 
-    static map<intptr_t, vector<RefInfo>> getRelationship(lua_State *L)//获取一个全局的关系图
+    //获取一个全局的关系图
+    //从根节点开始, 遍历每个table和lua closure,并记录节点之间的关系(RefInfo)
+    static map<intptr_t, vector<RefInfo>> getRelationship(lua_State *L)
     {
         map<intptr_t, vector<RefInfo>> result;//<intptr_t(child), vector<RefInfo>>, 注意这里是以intptr_t(child)为key
         int top = lua_gettop(L);
@@ -394,7 +396,7 @@ public:
         auto relationshipInfo = getRelationship(L);
 
         string sb;
-        sb.append("total memory: ").append(to_string(data.Memory));
+        sb.append("total memory: ").append(to_string(data.Memory)).append("\n");
 
         for(auto iter = data.TableSizes.begin(); iter != data.TableSizes.end(); ++iter)
         {
@@ -404,13 +406,16 @@ public:
             if(relationshipInfo.find(key) == relationshipInfo.end())
                 continue;
 
-            vector<RefInfo> infos = relationshipInfo[key];
+            vector<RefInfo> infos = relationshipInfo[key];//会不会存在闭环的情况
             vector<RefInfo> infosNew;
             
             vector<string> paths;
             for(int  i = 0; i < maxLevel; i++)
             {
+                infosNew.clear();
+                
                 int pathCount = paths.size();
+
                 //hasNext == false
                 for(auto iterInfo = infos.begin(); iterInfo != infos.end(); ++iterInfo)
                 {
@@ -445,14 +450,33 @@ public:
                             }
                         }
                     }
+
+                    infos = infosNew;//infos中始终存储着还没有回溯到最顶层parent的节点
                 }
                 else
                 {
                     break;                    
                 }
-                
             }
-            infos.clear();
+
+            //todo, 处理sb
+            //因为层级关系, maxLevel, infos还可能存在回溯不到最顶部的parent的节点
+            for(auto iterInfo = infos.begin(); iterInfo != infos.end(); ++iterInfo)
+            {
+                RefInfo info = *iterInfo;
+                if(info.HasNext == true)
+                {
+                    paths.push_back("..." + info.key);
+                }
+            }
+
+            //
+            sb.append("potential leak(").append(to_string(val)).append(") in {");
+            for(auto iter = paths.begin(); iter != paths.end(); ++iter)
+            {
+                sb.append(*iter).append(", ");
+            }
+            sb.append("}\n");
         }
 
         return sb;
