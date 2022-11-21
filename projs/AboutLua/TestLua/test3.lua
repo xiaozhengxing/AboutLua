@@ -1,8 +1,5 @@
 shutdown_fast_leak = false
 
-
-
-
 function myAdd(a, b)
     if shutdown_fast_leak  then
         return a + b + 100
@@ -19,6 +16,7 @@ function update()
     innocent()
     slow_leak()
 end
+
 
 
  

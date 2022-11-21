@@ -482,12 +482,11 @@ public:
     }
 };
 
+
 void main()
 {
-    
-    
     lua_State* L = luaL_newstate();
-    assert(L != NULL);
+    assert(L != NULL);    
 
     luaopen_base(L);
     luaL_openlibs(L);
@@ -590,11 +589,14 @@ void main()
     
 
     //lua内存分析
-    /*
-    Data data = LuaMemoryLeakChecker::StartMemoryLeakCheck(L);
+    
+    Data dataLast = LuaMemoryLeakChecker::StartMemoryLeakCheck(L);
+    cout << "Start, PotentialLeakCount:" << dataLast.PotentialLeakCount() << endl;
+
     int tick = 0;
     bool finished = false;
 
+    if(finished == false) return;
 
     while(true)
     {
@@ -615,26 +617,35 @@ void main()
 
             if(tick % 30 == 0)
             {
-                data = LuaMemoryLeakChecker::MemoryLeakCheck(L, data);
-                cout << "Update, PotentialLeakCount: "<< data.PotentialLeakCount() << endl;
+                dataLast = LuaMemoryLeakChecker::MemoryLeakCheck(L, dataLast);//返回有大小有增长的table信息
+                cout << "Update, PotentialLeakCount: "<< dataLast.PotentialLeakCount() << endl;
             }
 
             if(tick % 180 == 0)
             {
-                string s = LuaMemoryLeakChecker::MemoryLeakReport(L, data); 
+                string s = LuaMemoryLeakChecker::MemoryLeakReport(L, dataLast); 
                 cout << s <<endl;
 
                 if(tick == 180)
                 {
                     //假装解决了快速内存泄露
-                    
+                    lua_pushboolean(L, true);
+                    lua_setglobal(L, "shutdown_fast_leak");
+
+                    //开启一个新的泄露检测
+                    dataLast = LuaMemoryLeakChecker::StartMemoryLeakCheck(L);
+                }
+                else
+                {
+                    finished = true;
+                    cout << "Finished";
                 }
                 
             }
             
         }
     }
-    */
+    
     
     
     
