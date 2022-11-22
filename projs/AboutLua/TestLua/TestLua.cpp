@@ -16,15 +16,15 @@ using namespace std;
 
 extern "C"
 {
-#include "../Lua5_4_4/lua.h"
-#include "../Lua5_4_4/lauxlib.h"
-#include "../Lua5_4_4/lualib.h"
-#include "../Lua5_4_4/ltable.h"
-#include "../Lua5_4_4/lstate.h"
-#include "../Lua5_4_4/lobject.h"
-#include "../Lua5_4_4/lapi.h"
-#include "../Lua5_4_4/lgc.h"
-#include "../Lua5_4_4/llex.h"
+#include "../Lua5_3_5/lua.h"
+#include "../Lua5_3_5/lauxlib.h"
+#include "../Lua5_3_5/lualib.h"
+#include "../Lua5_3_5/ltable.h"
+#include "../Lua5_3_5/lstate.h"
+#include "../Lua5_3_5/lobject.h"
+#include "../Lua5_3_5/lapi.h"
+#include "../Lua5_3_5/lgc.h"
+#include "../Lua5_3_5/llex.h"
 
 }
 #define gnodelast(h) gnode(h, cast(size_t, sizenode(h)))
@@ -121,7 +121,23 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelati
             {
                 cb(result, h, gcvalue(key), RelationShipType_KeyOfTable3, NULL, 0, NULL);//table中的散列表部分, node.key是一个table   
             }
+            
+            bool b = false;
+            if(gcvalue(key) != NULL && b == false)
+            {
+                GCObject *obj = gcvalue(key);
+                if(obj->tt == 4)
+                {
+                    string s = getstr(gco2ts(obj));
+                    cout << s << endl;
+                }
+            }
 
+            if(ttisstring(key))//key为string
+            {
+                cout << "key=" << getstr(tsvalue(key)) << endl;
+            }
+            
             const TValue *value = gval(n);
             if(ttistable(value))//value为table
             {
@@ -171,7 +187,13 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua
         {
             LClosure *cl = gco2lcl(p);
             lua_lock(L);
+
+#if LUA_VERSION_NUM >= 504
             setclLvalue(L, &(L->top->val), cl);//将栈顶top指向lua closure
+#else
+            setclLvalue(L, L->top, cl);
+#endif
+            
             api_incr_top(L);
             lua_unlock(L);
 
@@ -179,7 +201,7 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua
 
             lua_getinfo(L, ">S", &ar);//获取lua closure 的函数信息, 执行完后,pop (lua closure)
 
-            for(int i = 0; ;i++)
+            for(i = 1; ;i++)
             {
                 name = lua_getupvalue(L, -1, i);//如获取成功,将upvalue(TValue*) push到栈顶, 返回upvalue的名字
                 if(name == NULL)
@@ -260,7 +282,7 @@ static string makeKey(RelationShipType type, const char *key, double d, const ch
     switch (type)
     {
     case RelationShipType_TableValue1://table中的散列表部分 node[key]是一个table, 1 key为其他类型, 2 key为string
-        return key == NULL? "LuaTypes(" + to_string(d)+")" : key;
+        return key == NULL? "LuaTypes(" + to_string((int)(d))+")" : key;
     case RelationShipType_NumberKeyTableValue2://1 table中的散列表部分 node[key]是一个table, key为number; 2 table中的数组部分里面存在table
         return "[" + to_string(d) + "]";
     case RelationShipType_KeyOfTable3://table中的散列表部分, node.key是一个table
@@ -294,7 +316,7 @@ void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const
         result[(intptr_t)child] = vector<RefInfo>();
     }
 
-    vector<RefInfo> infos = result[(intptr_t)child];
+    vector<RefInfo> &infos = result[(intptr_t)child];
     string keyOfRef = makeKey(type, key, d, key2);
 
     //lua closure没有父节点
@@ -545,7 +567,7 @@ void main()
     */
     
     //2、C调用Lua
-    lua_getglobal(L, "myAdd");
+    /*lua_getglobal(L, "myAdd");
     lua_pushnumber(L, 10);
     lua_pushnumber(L, 20);
     iRet = lua_pcall(L, 2, 1, 0);//2个参数，1个返回值
@@ -563,6 +585,7 @@ void main()
         double fValue = lua_tonumber(L, -1);
         cout << "C Call Lua, result = " << fValue << endl;
     }
+    */
 
     
     /*
@@ -593,9 +616,12 @@ void main()
     Data dataLast = LuaMemoryLeakChecker::StartMemoryLeakCheck(L);
     cout << "Start, PotentialLeakCount:" << dataLast.PotentialLeakCount() << endl;
 
+    string s = LuaMemoryLeakChecker::MemoryLeakReport(L, dataLast); 
+    cout <<  "report-----------\n" << s <<endl;
+    
+
     int tick = 0;
     bool finished = false;
-
     if(finished == false) return;
 
     while(true)
@@ -605,6 +631,7 @@ void main()
             tick++;
 
             //调用lua update函数
+            cout << "tick update, tick = " << tick << endl;
             lua_getglobal(L, "update");
             iRet = lua_pcall(L, 0, 0, 0);
             if (iRet)
@@ -624,7 +651,7 @@ void main()
             if(tick % 180 == 0)
             {
                 string s = LuaMemoryLeakChecker::MemoryLeakReport(L, dataLast); 
-                cout << s <<endl;
+                cout <<  "report-----------\n" << s <<endl;
 
                 if(tick == 180)
                 {
@@ -643,6 +670,10 @@ void main()
                 
             }
             
+        }
+        else
+        {
+            break;
         }
     }
     

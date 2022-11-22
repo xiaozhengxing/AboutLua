@@ -1,3 +1,11 @@
+
+
+
+TestTable88 = {
+    ["key1"]=666,
+    ["key2"]=777
+}
+
 shutdown_fast_leak = false
 
 function myAdd(a, b)
