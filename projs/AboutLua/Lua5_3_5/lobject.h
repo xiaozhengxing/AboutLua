@@ -77,6 +77,7 @@ typedef struct GCObject GCObject;
 ** included in other objects)
 */
 #define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
+//#define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked; int flag
 
 
 /*

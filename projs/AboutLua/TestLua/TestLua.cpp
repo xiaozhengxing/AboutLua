@@ -210,6 +210,17 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua
                 const void *pv = lua_topointer(L, -1);
                 if(*name != '\0' && LUA_TTABLE == lua_type(L, -1))
                 {
+                    /*GCObject *p1 = G(L)->allgc;
+                    while(p1 != NULL)
+                    {
+                        const void *p1c = p1;
+                        if(pv == p1c)
+                        {
+                            cout << "123" << endl;
+                        }
+                        p1 = p1->next;
+                    }*/
+                    
                     cb(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);//lua closure中的upvalue. 传入src文件名和行号?问题,如果是dostring,那这个src是什么?{short_src为[C], linedefined为-1}
                 }
                 lua_pop(L, 1);//pop栈顶的 upvalue
@@ -610,6 +621,7 @@ void main()
     
     
     
+
 
     //lua内存分析
     
