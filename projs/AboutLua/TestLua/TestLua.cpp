@@ -403,10 +403,10 @@ public:
         {
             intptr_t key = iter->first;
             int newSize = iter->second;
-            if(from.TableSizes.find(key) != from.TableSizes.end())//新增的不用管,这里只处理增加了的
+            if(from.TableSizes.find(key) != from.TableSizes.end())//新增的不用管,这里只处理已有的且有增长的
             {
                 int oldSize = from.TableSizes[key];
-                if(oldSize < newSize)//有增长
+                if(oldSize < newSize)//表格大小有增长
                 {
                     result.TableSizes[key] = newSize;
                 }
