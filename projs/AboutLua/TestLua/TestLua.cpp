@@ -94,7 +94,6 @@ public:
 
 
 struct RefInfo;
-typedef void (*TableSizeReport) (Data &data, const void *p, int size);
 typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2);
 
 
@@ -279,16 +278,6 @@ void* xlua_global_pointer(lua_State *L)
     lua_unlock(L);
     return gcvalue(global);
 }
-
-
-
-
-
-void TableSizeReport_Func (Data &data, const void *p, int size)
-{
-    data.TableSizes[(intptr_t)p] = size;
-}
-
 
 string UNKNOW_KEY = "???";
 string METATABLE_KEY = "__metatable";
