@@ -62,37 +62,7 @@ static int table_size(Table *h, int fast)
     }
 }
 
-
-class Data
-{
-public:
-    int Memory = 0;
-    map<intptr_t, int> TableSizes = map<intptr_t, int>();//<table的地址, table的大小>
-    public:
-    string ToString()
-    {
-        string s = "memory:" + to_string(Memory) + ", table count:" + to_string(TableSizes.size());
-        s.append("\n");
-
-        if(TableSizes.size() < 10)
-        {
-            for(auto iter = TableSizes.begin(); iter != TableSizes.end(); ++iter)
-            {
-                s.append("table(" + to_string((int)iter->first) + "):" + to_string(iter->second) + "\n");
-            }
-        }
-        else
-        {
-            s.append("Too much table...\n");
-        }
-
-        return s;
-    }
-
-    int PotentialLeakCount(){return TableSizes.size();}
-};
-
-
+class Data;
 struct RefInfo;
 typedef void (*TableSizeReport) (Data &data, const void *p, int size);
 typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2);
@@ -100,7 +70,7 @@ typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> &result
 
 //从根节点开始,遍历整个链表, 如果是table, 执行函数cb
 //最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
-void xlua_report_table_size(Data &data, lua_State *L, int fast)
+void xlua_report_table_size(Data &data, lua_State *L, TableSizeReport cb, int fast)
 {
     GCObject *p =G(L)->allgc;
     while(p != NULL)
@@ -108,8 +78,7 @@ void xlua_report_table_size(Data &data, lua_State *L, int fast)
         if(p->tt == LUA_TTABLE)
         {
             Table *h = gco2t(p);
-            
-            data.TableSizes[(intptr_t)p] = table_size(h, fast);
+            cb(data, h, table_size(h, fast));//data.TableSizes[(intptr_p)h] = table_size(h, fast)
         }
         p = p->next;
     }
@@ -281,7 +250,34 @@ void* xlua_global_pointer(lua_State *L)
 }
 
 
+class Data
+{
+public:
+    int Memory = 0;
+    map<intptr_t, int> TableSizes = map<intptr_t, int>();//<table的地址, table的大小>
+public:
+    string ToString()
+    {
+        string s = "memory:" + to_string(Memory) + ", table count:" + to_string(TableSizes.size());
+        s.append("\n");
 
+        if(TableSizes.size() < 10)
+        {
+            for(auto iter = TableSizes.begin(); iter != TableSizes.end(); ++iter)
+            {
+                s.append("table(" + to_string((int)iter->first) + "):" + to_string(iter->second) + "\n");
+            }
+        }
+        else
+        {
+            s.append("Too much table...\n");
+        }
+
+        return s;
+    }
+
+    int PotentialLeakCount(){return TableSizes.size();}
+};
 
 
 void TableSizeReport_Func (Data &data, const void *p, int size)
@@ -361,8 +357,6 @@ void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const
     infos.push_back(r);
 }
 
-
-
 class LuaMemoryLeakChecker
 {
 public:
@@ -373,7 +367,7 @@ public:
 
         //从根节点开始,遍历整个链表,如果是table, 执行函数cb
         //最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
-        xlua_report_table_size(data, L, 0);
+        xlua_report_table_size(data, L, TableSizeReport_Func, 0);
         return data;
     }
 
