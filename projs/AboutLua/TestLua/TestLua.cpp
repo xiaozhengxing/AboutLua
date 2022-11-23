@@ -125,8 +125,6 @@ struct RefInfo
     bool isNumberKey;
 };
 
-typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2);
-
 intptr_t registryPointer;
 intptr_t globalPointer;
 
@@ -183,15 +181,14 @@ void xlua_report_table_size(Data &data, lua_State *L, int fast)
 }
 
 //遍历表table中的所有key-value,只要key-value有任意一个是table,则执行函数cb
-void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelationshipReport cb)
+void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h)
 {
     Node *n, *limit = gnodelast(h);
     unsigned int i;
 
     if(h->metatable != NULL)
     {
-        
-        cb(result, h, h->metatable, RelationShipType_Metatable4, NULL, 0, NULL);//处理table的元表metatable
+        ObjectRelationshipReport_Func(result, h, h->metatable, RelationShipType_Metatable4, NULL, 0, NULL);//处理table的元表metatable
     }
 #if LUA_VERSION_NUM >= 504
     for(int i = 0; i < h->alimit; i++)
@@ -202,7 +199,7 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelati
         const TValue *item = &h->array[i];
         if(ttistable(item))
         {
-            cb(result, h, gcvalue(item), RelationShipType_NumberKeyTableValue2, NULL, i + 1, NULL);//table中的数组部分里面存在table时
+            ObjectRelationshipReport_Func(result, h, gcvalue(item), RelationShipType_NumberKeyTableValue2, NULL, i + 1, NULL);//table中的数组部分里面存在table时
         }
     }
 
@@ -217,7 +214,7 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelati
 #endif
             if(ttistable(key))
             {
-                cb(result, h, gcvalue(key), RelationShipType_KeyOfTable3, NULL, 0, NULL);//table中的散列表部分, node.key是一个table   
+                ObjectRelationshipReport_Func(result, h, gcvalue(key), RelationShipType_KeyOfTable3, NULL, 0, NULL);//table中的散列表部分, node.key是一个table   
             }
             
             bool b = false;
@@ -241,18 +238,18 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelati
             {
                 if(ttisstring(key))//key为string
                 {
-                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, getstr(tsvalue(key)), 0, NULL);//table中的散列表部分val=node[key]是一个table, key为string
+                    ObjectRelationshipReport_Func(result, h, gcvalue(value), RelationShipType_TableValue1, getstr(tsvalue(key)), 0, NULL);//table中的散列表部分val=node[key]是一个table, key为string
                 }
                 else if(ttisnumber(key))//key为number
                 {
-                    cb(result, h, gcvalue(value), RelationShipType_NumberKeyTableValue2, NULL, nvalue(key), NULL);//table中的散列表部分val=node[key]是一个table, key为number
+                    ObjectRelationshipReport_Func(result, h, gcvalue(value), RelationShipType_NumberKeyTableValue2, NULL, nvalue(key), NULL);//table中的散列表部分val=node[key]是一个table, key为number
                 }
                 else//key为其他类型
                 {
 #if LUA_VERSION_NUM >= 504
-                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, novariant(key->tt_), NULL);//table中的散列表部分val=node[key]是一个table, key为其他类型, 这里传入key类型的低4位
+                    ObjectRelationshipReport_Func(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, novariant(key->tt_), NULL);//table中的散列表部分val=node[key]是一个table, key为其他类型, 这里传入key类型的低4位
 #else
-                    cb(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, ttnov(key), NULL);//
+                    ObjectRelationshipReport_Func(result, h, gcvalue(value), RelationShipType_TableValue1, NULL, ttnov(key), NULL);//
 #endif
                 }
             }
@@ -264,7 +261,7 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelati
 //从根节点开始, 遍历每个table和lua Closure
 //1 table: 对table中的key-value进行遍历,只要有table,都执行cb
 //2 lua Closure:对lua函数的所有upvalue,执行cb
-void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua_State *L, ObjectRelationshipReport cb)
+void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua_State *L)
 {
     GCObject *p = G(L)->allgc;
     lua_Debug ar;
@@ -277,7 +274,7 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua
             Table *h = gco2t(p);
 
             //遍历表table中的所有key-value,只要key-value有任意一个是table,则执行函数cb
-            report_table(result, h, cb);
+            report_table(result, h);
         }
 #if LUA_VERSION_NUM >= 504
         else if(p->tt == LUA_VLCL)//处理每个lua closure中的 upvalue
@@ -321,9 +318,7 @@ void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua
                         p1 = p1->next;
                     }*/
                     
-                    
-                    
-                    cb(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);//lua closure中的upvalue. 传入src文件名和行号?问题,如果是dostring,那这个src是什么?{short_src为[C], linedefined为-1}
+                    ObjectRelationshipReport_Func(result, cl, pv, RelationShipType_UpVALUE5, ar.short_src, ar.linedefined, name);//lua closure中的upvalue. 传入src文件名和行号?问题,如果是dostring,那这个src是什么?{short_src为[C], linedefined为-1}
                 }
                 lua_pop(L, 1);//pop栈顶的 upvalue
             }
@@ -368,11 +363,11 @@ public:
     {
         map<intptr_t, vector<RefInfo>> result;//<intptr_t(child), vector<RefInfo>>, 注意这里是以intptr_t(child)为key
         int top = lua_gettop(L);
-        intptr_t registryPointer = (intptr_t)xlua_registry_pointer(L);
-        intptr_t globalPointer = (intptr_t)xlua_global_pointer(L);
+        //intptr_t registryPointer = (intptr_t)xlua_registry_pointer(L);
+        //intptr_t globalPointer = (intptr_t)xlua_global_pointer(L);
 
         //从根节点开始, 遍历每个table和lua closure,并记录节点之间的关系(RefInfo)
-        xlua_report_object_relationship(result, L, ObjectRelationshipReport_Func);
+        xlua_report_object_relationship(result, L);
 
         lua_settop(L, top);
         
