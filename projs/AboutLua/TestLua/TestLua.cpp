@@ -93,9 +93,77 @@ public:
 };
 
 
-struct RefInfo;
+string UNKNOW_KEY = "???";
+string METATABLE_KEY = "__metatable";
+string KEY_OF_TABLE = "!KEY!";
+
+//使用type和几个信息, 返回一个string key
+static string makeKey(RelationShipType type, const char *key, double d, const char *key2)
+{
+    switch (type)
+    {
+    case RelationShipType_TableValue1://table中的散列表部分 node[key]是一个table, 1 key为其他类型, 2 key为string
+        return key == NULL? "LuaTypes(" + to_string((int)(d))+")" : key;
+    case RelationShipType_NumberKeyTableValue2://1 table中的散列表部分 node[key]是一个table, key为number; 2 table中的数组部分里面存在table
+        return "[" + to_string(d) + "]";
+    case RelationShipType_KeyOfTable3://table中的散列表部分, node.key是一个table
+        return KEY_OF_TABLE;
+    case RelationShipType_Metatable4://table的元表metatable
+        return KEY_OF_TABLE;
+    case RelationShipType_UpVALUE5://lua closure中的upvalue, short_src, linedefined
+        return "Upvalue-" + string(key) + ":local " + string(key2); 
+    }
+
+    return UNKNOW_KEY;
+}
+
+struct RefInfo
+{
+    string key;
+    bool HasNext;//是否有父结点(表)[不包括_R和_G]
+    intptr_t parent;
+    bool isNumberKey;
+};
+
 typedef void (*ObjectRelationshipReport) (map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2);
 
+intptr_t registryPointer;
+intptr_t globalPointer;
+
+//result[child].push_back(new RefInfo), 注意这里是以intptr_t(child)为key
+void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2)
+{
+    if(result.find((intptr_t)child) == result.end())
+    {
+        result[(intptr_t)child] = vector<RefInfo>();
+    }
+
+    vector<RefInfo> &infos = result[(intptr_t)child];
+    string keyOfRef = makeKey(type, key, d, key2);
+
+    //lua closure没有父节点
+    bool hasNext = type != RelationShipType_UpVALUE5;
+    if(hasNext)//
+        {
+        if((intptr_t)parent == registryPointer)//_R
+            {
+            keyOfRef = "_R." + keyOfRef;
+            hasNext = false;
+            }
+        else if((intptr_t)parent == globalPointer)//_G
+            {
+            keyOfRef = "_G." + keyOfRef;
+            hasNext = false;
+            }
+        }
+
+    RefInfo r;
+    r.key = keyOfRef;
+    r.HasNext = hasNext;
+    r.parent = (intptr_t)parent;
+    r.isNumberKey = type == RelationShipType_NumberKeyTableValue2;
+    infos.push_back(r);
+}
 
 //从根节点开始,遍历整个链表, 如果是table, 执行函数cb
 //最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
@@ -122,6 +190,7 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h, ObjectRelati
 
     if(h->metatable != NULL)
     {
+        
         cb(result, h, h->metatable, RelationShipType_Metatable4, NULL, 0, NULL);//处理table的元表metatable
     }
 #if LUA_VERSION_NUM >= 504
@@ -278,79 +347,6 @@ void* xlua_global_pointer(lua_State *L)
     lua_unlock(L);
     return gcvalue(global);
 }
-
-string UNKNOW_KEY = "???";
-string METATABLE_KEY = "__metatable";
-string KEY_OF_TABLE = "!KEY!";
-
-//使用type和几个信息, 返回一个string key
-static string makeKey(RelationShipType type, const char *key, double d, const char *key2)
-{
-    switch (type)
-    {
-    case RelationShipType_TableValue1://table中的散列表部分 node[key]是一个table, 1 key为其他类型, 2 key为string
-        return key == NULL? "LuaTypes(" + to_string((int)(d))+")" : key;
-    case RelationShipType_NumberKeyTableValue2://1 table中的散列表部分 node[key]是一个table, key为number; 2 table中的数组部分里面存在table
-        return "[" + to_string(d) + "]";
-    case RelationShipType_KeyOfTable3://table中的散列表部分, node.key是一个table
-        return KEY_OF_TABLE;
-    case RelationShipType_Metatable4://table的元表metatable
-        return KEY_OF_TABLE;
-    case RelationShipType_UpVALUE5://lua closure中的upvalue, short_src, linedefined
-        return "Upvalue-" + string(key) + ":local " + string(key2); 
-    }
-
-    return UNKNOW_KEY;
-}
-
-struct RefInfo
-{
-    string key;
-    bool HasNext;//是否有父结点(表)[不包括_R和_G]
-    intptr_t parent;
-    bool isNumberKey;
-};
-
-
-intptr_t registryPointer;
-intptr_t globalPointer;
-
-//result[child].push_back(new RefInfo), 注意这里是以intptr_t(child)为key
-void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const void *parent, const void *child, RelationShipType type, const char * key, double d, const char *key2)
-{
-    if(result.find((intptr_t)child) == result.end())
-    {
-        result[(intptr_t)child] = vector<RefInfo>();
-    }
-
-    vector<RefInfo> &infos = result[(intptr_t)child];
-    string keyOfRef = makeKey(type, key, d, key2);
-
-    //lua closure没有父节点
-    bool hasNext = type != RelationShipType_UpVALUE5;
-    if(hasNext)//
-    {
-        if((intptr_t)parent == registryPointer)//_R
-        {
-            keyOfRef = "_R." + keyOfRef;
-            hasNext = false;
-        }
-        else if((intptr_t)parent == globalPointer)//_G
-        {
-            keyOfRef = "_G." + keyOfRef;
-            hasNext = false;
-        }
-    }
-
-    RefInfo r;
-    r.key = keyOfRef;
-    r.HasNext = hasNext;
-    r.parent = (intptr_t)parent;
-    r.isNumberKey = type == RelationShipType_NumberKeyTableValue2;
-    infos.push_back(r);
-}
-
-
 
 class LuaMemoryLeakChecker
 {
