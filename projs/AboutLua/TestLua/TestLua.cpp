@@ -353,22 +353,22 @@ public:
         Data data = Data();
         data.Memory = lua_gc(L, LUA_GCCOUNT, 0);
 
-        //从根节点开始,遍历整个链表,如果是table, 执行函数cb
+        //从根节点开始,遍历整个gc链表中的table, 记录大小
         //最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
         xlua_report_table_size(data, L, 0);
         return data;
     }
 
     //获取一个全局的关系图
-    //从根节点开始, 遍历每个table和lua closure,并记录节点之间的关系(RefInfo)
+    //从根节点开始, 遍历每个table和lua closure的upvalue(选择类型为table的),并记录节点之间的关系(RefInfo)
     static map<intptr_t, vector<RefInfo>> getRelationship(lua_State *L)
     {
         map<intptr_t, vector<RefInfo>> result;//<intptr_t(child), vector<RefInfo>>, 注意这里是以intptr_t(child)为key
         int top = lua_gettop(L);
-        //intptr_t registryPointer = (intptr_t)xlua_registry_pointer(L);
-        //intptr_t globalPointer = (intptr_t)xlua_global_pointer(L);
 
-        //从根节点开始, 遍历每个table和lua closure,并记录节点之间的关系(RefInfo)
+        //从根节点开始, 遍历每个table和lua Closure
+        //1 table: 遍历表table中的所有key-value,只要key-value有任意一个是table,则MakeKey(RefInfo{child,parent})插入到result中
+        //2 lua Closure:对lua函数的所有upvalue{类型为table的}, MakeKey(RefInfo{child,parent}),插入到result中
         xlua_report_object_relationship(result, L);
 
         lua_settop(L, top);
