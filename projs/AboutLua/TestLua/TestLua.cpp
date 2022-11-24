@@ -143,7 +143,8 @@ void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const
     vector<RefInfo> &infos = result[(intptr_t)child];
     string keyOfRef = makeKey(type, key, d, key2);
 
-    //lua closure中的upvalue没有父节点
+    //todo,这里可以优化一下,加上一下upvalue所在的函数名什么的信息,就更全一些
+    //注意!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   lua closure中的upvalue没有父节点{hasNext=false, 但是parent不为null}
     bool hasNext = type != RelationShipType_UpVALUE5;
     if(hasNext)//
     {
@@ -413,14 +414,14 @@ public:
         return findGrowing(last, getSizeReport(L));
     }
 
-    //xzxtodo
+    //data中一般为有增长的table信息
     static string MemoryLeakReport(lua_State *L, Data data, int maxLevel = 10)
     {
         lua_gc(L, 2, 0);//LUA_GCCOLLECT, performs a full garbage-collection cycle
         auto relationshipInfo = getRelationship(L);
 
         string sb;
-        sb.append("total memory: ").append(to_string(data.Memory)).append("\n");
+        sb.append("total memory: ").append(to_string(data.Memory)).append("kb\n");
 
         for(auto iter = data.TableSizes.begin(); iter != data.TableSizes.end(); ++iter)
         {
@@ -434,13 +435,13 @@ public:
             vector<RefInfo> infosNew;
             
             vector<string> paths;
-            for(int  i = 0; i < maxLevel; i++)
+            for(int  i = 0; i < maxLevel; i++)//最多查几级关系
             {
                 infosNew.clear();
                 
                 int pathCount = paths.size();
 
-                //hasNext == false
+                //hasNext == false,没有父节点()
                 for(auto iterInfo = infos.begin(); iterInfo != infos.end(); ++iterInfo)
                 {
                     RefInfo info = *iterInfo;
