@@ -68,7 +68,8 @@ class Data
 public:
     int Memory = 0;
     map<intptr_t, int> TableSizes = map<intptr_t, int>();//<table的地址, table的大小>
-    public:
+
+public:
     string ToString()
     {
         string s = "memory:" + to_string(Memory) + ", table count:" + to_string(TableSizes.size());
@@ -89,7 +90,10 @@ public:
         return s;
     }
 
-    int PotentialLeakCount(){return TableSizes.size();}
+    int PotentialLeakCount()
+    {
+        return TableSizes.size();
+    }
 };
 
 
@@ -109,7 +113,7 @@ static string makeKey(RelationShipType type, const char *key, double d, const ch
     case RelationShipType_KeyOfTable3://table中的散列表部分, node.key是一个table
         return KEY_OF_TABLE;
     case RelationShipType_Metatable4://table的元表metatable
-        return KEY_OF_TABLE;
+        return METATABLE_KEY;
     case RelationShipType_UpVALUE5://lua closure中的upvalue, short_src, linedefined
         return "Upvalue-" + string(key) + ":local " + string(key2); 
     }
@@ -120,7 +124,7 @@ static string makeKey(RelationShipType type, const char *key, double d, const ch
 struct RefInfo
 {
     string key;
-    bool HasNext;//是否有父结点(表)[不包括_R和_G]
+    bool HasNext;//是否有父结点(表)[不包括_R和_G], 注意lua closure中的upvalue没有父节点
     intptr_t parent;
     bool isNumberKey;
 };
@@ -139,21 +143,21 @@ void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const
     vector<RefInfo> &infos = result[(intptr_t)child];
     string keyOfRef = makeKey(type, key, d, key2);
 
-    //lua closure没有父节点
+    //lua closure中的upvalue没有父节点
     bool hasNext = type != RelationShipType_UpVALUE5;
     if(hasNext)//
-        {
+    {
         if((intptr_t)parent == registryPointer)//_R
-            {
+        {
             keyOfRef = "_R." + keyOfRef;
             hasNext = false;
-            }
+        }
         else if((intptr_t)parent == globalPointer)//_G
-            {
+        {
             keyOfRef = "_G." + keyOfRef;
             hasNext = false;
-            }
         }
+    }
 
     RefInfo r;
     r.key = keyOfRef;
