@@ -167,7 +167,7 @@ void ObjectRelationshipReport_Func(map<intptr_t, vector<RefInfo>> &result, const
     infos.push_back(r);
 }
 
-//从根节点开始,遍历整个链表, 如果是table, 执行函数cb
+//从根节点开始,遍历整个gc链表中的table, 记录大小
 //最终: data.TableSizes[(intptr_p)h] = table_size(h, fast)
 void xlua_report_table_size(Data &data, lua_State *L, int fast)
 {
@@ -184,7 +184,7 @@ void xlua_report_table_size(Data &data, lua_State *L, int fast)
     }
 }
 
-//遍历表table中的所有key-value,只要key-value有任意一个是table,则执行函数cb
+//遍历表table h中的所有key-value,只要key-value有任意一个是table,则makeKey(child,parent)插入到result中
 void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h)
 {
     Node *n, *limit = gnodelast(h);
