@@ -414,6 +414,7 @@ public:
         return findGrowing(last, getSizeReport(L));
     }
 
+    //todo,可以优化一下算法, vector<RefInfo> infos更新同步到relationship中,不要新创建RefInfo
     //data中一般为有增长的table信息
     static string MemoryLeakReport(lua_State *L, Data data, int maxLevel = 10)
     {
@@ -430,11 +431,14 @@ public:
             
             if(relationshipInfo.find(key) == relationshipInfo.end())
                 continue;
-
+            
             vector<RefInfo> infos = relationshipInfo[key];//会不会存在闭环的情况
             vector<RefInfo> infosNew;
-            
             vector<string> paths;
+            //下面会不停的更新infos
+            //1、将infos中 hasNext=false{无父节点}的RefInfo的key值都保存到path列表中, 
+            //2、infos中仅保存hasNext=true{有父节点}的RefInfo,并根据RefInfo中的父节点的信息,更新RefInfo
+            
             for(int  i = 0; i < maxLevel; i++)//最多查几级关系
             {
                 infosNew.clear();
@@ -449,7 +453,7 @@ public:
                         paths.push_back(info.key);
                 }
 
-                if(paths.size() - pathCount != infos.size())//还有 rRefInfo.hasNext==true的节点
+                if(paths.size() - pathCount != infos.size())//还有 RefInfo.hasNext==true的节点{有父节点,需要继续往上}
                 {
                     //hasNext = true
                     for(auto iterInfo = infos.begin(); iterInfo != infos.end(); ++iterInfo)
