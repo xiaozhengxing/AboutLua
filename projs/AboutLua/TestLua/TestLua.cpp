@@ -184,7 +184,7 @@ void xlua_report_table_size(Data &data, lua_State *L, int fast)
     }
 }
 
-//遍历表table h中的所有key-value,只要key-value有任意一个是table,则makeKey(child,parent)插入到result中
+//遍历表table h中的所有key-value,只要key-value有任意一个是table,则MakeKey(RefInfo{child,parent})插入到result中
 void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h)
 {
     Node *n, *limit = gnodelast(h);
@@ -258,8 +258,8 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h)
 }
 
 //从根节点开始, 遍历每个table和lua Closure
-//1 table: 对table中的key-value进行遍历,只要有table,都执行cb
-//2 lua Closure:对lua函数的所有upvalue,执行cb
+//1 table: 遍历表table中的所有key-value,只要key-value有任意一个是table,则MakeKey(RefInfo{child,parent})插入到result中
+//2 lua Closure:对lua函数的所有upvalue{类型为table的}, MakeKey(RefInfo{child,parent}),插入到result中
 void xlua_report_object_relationship(map<intptr_t, vector<RefInfo>> &result, lua_State *L)
 {
     GCObject *p = G(L)->allgc;
