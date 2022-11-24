@@ -217,7 +217,7 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h)
                 ObjectRelationshipReport_Func(result, h, gcvalue(key), RelationShipType_KeyOfTable3, NULL, 0, NULL);//table中的散列表部分, node.key是一个table   
             }
             
-            bool b = false;
+            /*bool b = false;
             if(gcvalue(key) != NULL && b == false)
             {
                 GCObject *obj = gcvalue(key);
@@ -226,12 +226,7 @@ void report_table(map<intptr_t, vector<RefInfo>> &result, Table *h)
                     string s = getstr(gco2ts(obj));
                     cout << s << endl;
                 }
-            }
-
-            if(ttisstring(key))//key为string
-            {
-                cout << "key=" << getstr(tsvalue(key)) << endl;
-            }
+            }*/
             
             const TValue *value = gval(n);
             if(ttistable(value))//value为table

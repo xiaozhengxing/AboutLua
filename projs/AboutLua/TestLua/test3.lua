@@ -1,5 +1,20 @@
 
-
+TestTT = {
+    ["AudioMgr"] = {
+        ["RegisterEvent"] = {
+            0
+        },
+        ["ToBytes"] = {
+                    20562,20563
+        },
+        ["ToBytes_Byte_L0...,0..._R"] = {
+            20562
+        },
+        ["ToBytes_Byte[]"] = {
+            20563
+        },
+    }
+}
 
 TestTable88 = {
     ["key1"]=666,
