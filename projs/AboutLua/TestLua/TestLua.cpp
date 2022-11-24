@@ -339,6 +339,9 @@ void* xlua_global_pointer(lua_State *L)
     lua_lock(L);
     global = luaH_getint(reg, LUA_RIDX_GLOBALS);
     lua_unlock(L);
+    //GCObject * p = gcvalue(global)
+    //Table * h = gco2t(p), 最终p和h的值是一样的, 因为GCUnion是个union, GCObject强转至GCUnion,GCUnion.h和GCUnion.gc的值都是一样的
+    
     return gcvalue(global);
 }
 
