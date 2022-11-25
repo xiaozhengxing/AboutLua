@@ -17,3 +17,26 @@ end
 
 print(FormatDateTimeNow())
 
+--使用最原始的tostring(cObject),而不触发其元表
+local function GetOriginalToStringResult(cObject)
+    if not cObject then
+        return ""
+    end
+
+    local cMt = getmetatable(cObject)
+    if not cMt then
+        return tostring(cObject)
+    end
+
+    --检测元表中的tostring方法
+    local cToString = rawget(cMt, "__tostring")
+	if cToString then
+		rawset(cMt, "__tostring", nil)--先设置为nil
+		strName = tostring(cObject)
+		rawset(cMt, "__tostring", cToString)--恢复
+	else
+		strName = tostring(cObject)
+	end
+
+	return strName
+end
