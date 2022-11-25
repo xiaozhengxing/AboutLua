@@ -1,8 +1,6 @@
 /*
-
-1、 Lua调用C
-2、 C调用Lua
-
+参考
+https://github.com/Tencent/xLua/tree/master/General/LuaMemoryLeakChecker
 */
 
 #include <iostream>
