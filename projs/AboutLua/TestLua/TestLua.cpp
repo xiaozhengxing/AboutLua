@@ -510,7 +510,7 @@ public:
 };
 
 
-void main()
+void mainTestLuaInC()
 {
     lua_State* L = luaL_newstate();
     assert(L != NULL);    
@@ -687,4 +687,36 @@ void main()
     
     
     lua_close(L);
+}
+
+
+void mainTestLuaInLua()
+{
+    lua_State* L = luaL_newstate();
+    assert(L != NULL);    
+
+    luaopen_base(L);
+    luaL_openlibs(L);
+
+    registryPointer = (intptr_t)xlua_registry_pointer(L);
+    globalPointer = (intptr_t)xlua_global_pointer(L);
+
+
+    int iRet = luaL_dofile(L, "SnapShot.lua");
+    if (iRet)
+    {
+        cout << "load file SnapShot.lua error " << iRet << endl;
+        const char* pErrorMsg = lua_tostring(L, -1);
+        cout << pErrorMsg << endl;
+        lua_close(L);
+        
+        return;
+    }
+}
+
+
+void main()
+{
+    //mainTestLuaInC();
+    mainTestLuaInLua();
 }
