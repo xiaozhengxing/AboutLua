@@ -40,3 +40,30 @@ local function GetOriginalToStringResult(cObject)
 
 	return strName
 end
+
+local function CreateObjectReferenceInfoContainer()
+    --Create new container
+    local cContainer = {}
+
+    -- Contain [table/function] - [reference count] info
+    local cObjectReferenceCount = {}
+    setmetatable(cObjectReferenceCount, {__mode="k"})
+
+    -- Contain [table/function] - [name] info
+    local cObjectAddressToName = {}
+    setmetatable(cObjectAddressToName, {__mode="k"})
+
+    --set members
+    cContainer.m_cObjectReferenceCount = cObjectReferenceCount
+    cContainer.m_cObjectAdressToName = cObjectAddressToName
+
+    --For Stack info
+    cContainer.m_nStackLevel = -1
+    cContainer.m_strShortSrc = "None"
+    cContainer.m_nCurrentLine = -1
+
+
+    return cContainer
+end
+
+
