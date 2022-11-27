@@ -95,3 +95,39 @@ local function CreateObjectReferenceInfoContainerFromFile(strFilePath)
 end
 
 
+--Create a container to collect the mem ref info results from a dumped file
+--strObjectName - The object name you need to collect info.
+--cObject - The object you need to collect info
+local function CreateSingleObjectReferenceInfoContainer(strObjectName, cObject)
+    local cContainer = {}
+
+    --Contain[address]-[true] info
+    local cObjectExistTag = {}
+    setmetatable(cObjectExistTag, {__mode = "k"})
+
+    --Contain [name] - [true] info
+    local cObjectAliasName = {}
+
+    --Contain [access] - [true] info
+    local cObjectAccessTag = {}
+    setmetatable(cObjectAccessTag, {__mode = "k"})
+
+    --Set members
+    cContainer.m_cObjectExistTag = cObjectExistTag
+    cContainer.m_cObjectAliasName = cObjectAliasName
+    cContainer.m_cObjectAcessTag = cObjectAccessTag
+
+    -- For stack info
+    cContainer.m_nStackLevel = -1
+    cContainer.m_strShortSrc = "None"
+    cContainer.m_nCurrentLine = -1
+
+    --Init with object values
+    cContainer.m_strObjectName = strObjectName
+    cContainer.m_strAddressName = (("string" == type(cObject)) and ("\"" .. tostring(cObject) .. "\"")) or GetOriginalToStringResult(cObject)
+    cContainer.m_cObjectExistTag[cObject] = true
+    
+    return cContainer
+end
+
+
