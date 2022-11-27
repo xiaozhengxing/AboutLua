@@ -66,4 +66,32 @@ local function CreateObjectReferenceInfoContainer()
     return cContainer
 end
 
+local function CreateObjectReferenceInfoContainerFromFile(strFilePath)
+    local cContainer = CreateObjectReferenceInfoContainer()
+    cContainer.m_strShortSrc = strFilePath
+
+    --Cache ref info
+    local cRefInfo = cContainer.m_cObjectReferenceCount
+    local cNameInfo = cContainer.m_cObjectAdressToName
+
+    --Read each line from file.
+    local cFile = assert(io.open(strFilePath, "rb"))
+    for strLine in cFile:lines() do 
+        local strHeader = string.sub(strLine, 1, 2)--返回前两个字符
+        if "--" ~= strHeader then
+            local _,_, strAddr, strName, strRefCount = string.find(strLine, "(.+)\t(.*)\t(%d+)")
+            if strAddr then
+                cRefInfo[strAddr] = strRefCount
+                cNameInfo[strAddr] = strName
+            end
+        end
+    end
+
+    -- Close and clear file handler
+    io.close(cFile)
+    cFile = nil 
+
+    return  cContainer
+end
+
 
