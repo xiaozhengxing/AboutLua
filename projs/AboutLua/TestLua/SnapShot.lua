@@ -131,3 +131,49 @@ local function CreateSingleObjectReferenceInfoContainer(strObjectName, cObject)
 end
 
 
+-- 这个函数比较重要
+-- Collect memory reference info from a root table or function
+-- strName - The root object name that start to search, default is "_G" if leave this to nil 
+-- cObject - The root object that start to search, default is _G if leave this to nil 
+-- cDumpInfoContainer - The container of the dump result info
+local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContainer)
+    if not cObject then
+        return
+    end
+
+    if not strName then
+        strName = ""
+    end
+
+    -- Check Container
+    if (not cDumpInfoContainer) then
+        cDumpInfoContainer = CreateObjectReferenceInfoContainer()
+    end
+
+    -- check stack
+    if cDumpInfoContainer.m_nStackLevel > 0 then
+        local cStackInfo = debug.getinfo(cDumpInfoContainer.m_nStackLevel, "Sl")
+        if cStackInfo then
+            cDumpInfoContainer.m_strShortSrc = cStackInfo.short_src
+            cDumpInfoContainer.m_nCurrentLine = cStackInfo.currentline
+        end
+
+        cDumpInfoContainer.m_nStackLevel = -1
+    end
+
+    -- Get ref and name info
+    local cRefInfoContainer = cDumpInfoContainer.m_cObjectReferenceCount
+    local cNameInfoContainer = cDumpInfoContainer.m_cObjectAdressToName
+
+    local strType = type(cObject)
+    
+
+
+end
+
+
+
+
+
+
+
