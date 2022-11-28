@@ -240,10 +240,30 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
                     CollectObjectReferenceInMemory(strName..".[table:key.thread]", k, cDumpInfoContainer)
                 end
 
-                --xzxtodo
-            end
+                if not bWeakV then
+                    CollectObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            elseif "userdata" == strKeyType then
+                if not bWeakK then
+                    CollectObjectReferenceInMemory(strName..".[table:key.userdata]", k,  cDumpInfoContainer)
+                end
 
+                if not bWeakV then 
+                    CollectObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            else
+                CollectObjectReferenceInMemory(strName.."."..k, v, cDumpInfoContainer)
+            end
         end
+
+        -- Dump metatable
+        if cMt then
+            CollectObjectReferenceInMemory(strName..".[metatable]", cMt, cDumpInfoContainer)
+        end
+
+    elseif "function" == strType then
+
+
 
         --xzxtodo
 
