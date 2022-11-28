@@ -322,7 +322,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         if cMt then
             CollectObjectReferenceInMemory(strName..".[thread:metatable]", cMt, cDumpInfoContainer)
         end
-    elseif "userdata" == strtype then
+    elseif "userdata" == strType then
         --Add reference and name
         cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
         if cNameInfoContainer[cObject] then
@@ -354,7 +354,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         end
 
         --set Name
-        cNameInfoContainer[cObject] = strName.."["..strtype.."]"
+        cNameInfoContainer[cObject] = strName.."["..strType.."]"
     else
         --For "number" and "boolean".
         --Add reference and name
@@ -365,7 +365,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         end
 
         --set Name
-        cNameInfoContainer[cObject] = strName.."["..strtype..":"..tostring(cObject).."]"
+        cNameInfoContainer[cObject] = strName.."["..strType..":"..tostring(cObject).."]"
         --]]
     end
     
@@ -481,10 +481,31 @@ local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoC
                     CollectSingleObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
                 end
             elseif "thread" == strKeyType then
-                --xzxtodo
+                if not bWeakK then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:key.thread]", k, cDumpInfoContainer)
+                end
+
+                if not bWeakV then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            elseif "userdata" == strKeyType then
+                if not bWeakK then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:key.userdata]", k, cDumpInfoContainer)
+                end
+
+                if not bWeakV then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            else
+                CollectSingleObjectReferenceInMemory(strName.."."..k, v, cDumpInfoContainer)
             end
         end
 
+        --Dump metatable
+        if cMt then
+            CollectSingleObjectReferenceInMemory(strName..".[metatable]", cMt, cDumpInfoContainer)
+        end
+    elseif "function" == strType then
         --xzxtodo
     end
     
