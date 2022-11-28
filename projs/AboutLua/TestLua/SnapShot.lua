@@ -262,6 +262,36 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         end
 
     elseif "function" == strType then
+        -- Get function info.
+        local cDInfo = debug.getinfo(cObject, "Su")
+        
+        --write this info
+        cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
+        if cNameInfoContainer[cObject] then
+            return 
+        end
+
+        -- Set name
+        cNameInfoContainer[cObject] = strName.."[line:"..tostring(cDInfo.linedefined).."@file:"..cDInfo.short_src.."]"
+
+        --Get upvalues
+        local nUpsNum = cDInfo.nups
+        for i = 1, nUpsNum do
+            local strUpName, cUpValue = debug.getupvalue(cObject, i)
+            local strUpValueType = type(cUpValue)
+            if "table" == strUpValueType then
+                CollectObjectReferenceInMemory(strName..".[ups:table:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            elseif "function" == strUpValueType then
+                CollectObjectReferenceInMemory(strName..".[ups:function:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            elseif "thread" == strUpValueType then
+                CollectObjectReferenceInMemory(strName..".[ups:thread:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            elseif "userdata" == strUpValueType then
+                CollectObjectReferenceInMemory(strName..".[ups:userdata:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            end
+        end
+
+        -- Dump evnviroment table.
+
 
 
 
