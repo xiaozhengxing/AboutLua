@@ -373,6 +373,127 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
 
 end
 
+-- Collect memory reference info of a single object from a root table or function.
+-- strName - The root object name that start to search, can not be nil 
+-- cObject - The root object that start to search, can not be nil 
+-- cDumpInfoContainer - The container of the dump rsult info
+local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoContainer)
+    if not cObject then
+        return
+    end
+
+    if not strName then
+        strName = ""
+    end
+
+    --Check container
+    if not cDumpInfoContainer then
+        cDumpInfoContainer = CreateObjectReferenceInfoContainer()
+    end
+
+    -- Check stack
+    if cDumpInfoContainer.m_nStackLevel > 0 then
+        local cStackInfo = debug.getinfo(cDumpInfoContainer.m_nStackLevel, "Sl")
+        if cStackInfo then
+            cDumpInfoContainer.m_strShortSrc = cStackInfo.short_src
+            cDumpInfoContainer.m_nCurrentLine = cStackInfo.currentline
+        end
+
+        cDumpInfoContainer.m_nStackLevel = -1
+    end
+
+    local cExistTag = cDumpInfoContainer.m_cObjectExistTag
+    local cNameAllAlias = cDumpInfoContainer.m_cObjectAliasName
+    local cAccessTag = cDumpInfoContainer.m_cObjectAcessTag
+
+    local strType = type(cObject)
+    if "table" == strType then
+        --Check table with class name
+        if rawget(cObject, "__cname") then
+            if "string" == type(cObject.__cname) then
+                strName = strName.."[class"..cObject.__cname.."]"
+            end
+        elseif rawget(cObject, "class") then
+            if "string" == type(cObject.class) then
+                strName = strName.."[class:"..cObject.class.."]"
+            end
+        elseif rawget(cObject, "_className") then
+            if "string" == type(cObject._className) then
+                strName = strName .. "[class:" ..cObject._className .. "]"
+            end
+        end
+
+        -- Check if table is _G.
+        if cObject == _G then
+            strName = strName.."[_G]"
+        end
+
+        -- Get metatable.
+        local bWeakK = false
+        local bWeakV = false
+        local cMt = getmetatable(cObject)
+        if cMt then
+            -- Check mode.
+            local strMode = rawget(cMt, "__mode")
+            if strMode then
+                if "k" == strMode then
+                    bWeakK = true
+                elseif "v" == strMode then
+                    bWeakV = true
+                elseif "kv" == strMode then
+                    bWeakK = true
+                    bWeakV = true
+                end
+            end
+        end
+
+        --Check if the specified object
+        if cExistTag[cObject] and (not cNameAllAlias[strName]) then
+            cNameAllAlias[strName] = true
+        end
+
+        --Add reference and name
+        if cAccessTag[cObject] then
+            return
+        end
+
+        -- Get this name
+        cAccessTag[cObject] = true
+
+        --Dump table key and value
+        for k, v in  pairs(cObject) do
+            --Check key type
+            local strKeyType = type(k)
+            if "table" == strKeyType then
+                if not bWeakK then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:key.table]", k, cDumpInfoContainer)
+                end
+
+                if not bWeakV then
+                    CollectSingleObjectReferenceInMemory(strName..".[table.value]", v, cDumpInfoContainer)
+                end
+            elseif "function" == strKeyType then
+                if not bWeakK then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:key.function]", k, cDumpInfoContainer)
+                end
+
+                if not bWeakV then
+                    CollectSingleObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            elseif "thread" == strKeyType then
+                --xzxtodo
+            end
+        end
+
+        --xzxtodo
+    end
+    
+
+
+
+    --xzxtodo
+end
+
 
 
 
