@@ -541,7 +541,45 @@ local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoC
         end
 
         --Dump environment table
-        
+        local getfenv = debug.getfenv
+        if getfenv then
+            local cEnv = getfenv(cObject)
+            if cEnv then
+                CollectSingleObjectReferenceInMemory(strName..".[function:environment]", cEnv, cDumpInfoContainer)
+            end
+        end
+    elseif "thread" == strType then
+        --Check if the specified object
+        if cExistTag[cObject] and (not cNameAllAlias[strName]) then
+            cNameAllAlias[strName] = true
+        end
+
+        --Add reference and name
+        if cAccessTag[cObject] then
+            return
+        end
+
+        --Get this name
+        cAccessTag[cObject] = true
+
+        --Dump environment table
+        local getfenv = debug.getfenv
+        if getfenv then
+            local cEnv = getfenv(cObject)
+            if cEnv then
+                CollectSingleObjectReferenceInMemory(strName..".[thread:environment]", cEnv, cDumpInfoContainer)
+            end
+        end
+
+        --Dump metatable
+        local cMt = getmetatable(cObject)
+        if cMt then
+            CollectSingleObjectReferenceInMemory(strName..".[thread:metatable]", cMt, cDumpInfoContainer)
+        end
+    elseif "userdata" == strType then
+
+
+
         
         
         --xzxtodo
