@@ -166,6 +166,19 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
     local cNameInfoContainer = cDumpInfoContainer.m_cObjectAdressToName
 
     local strType = type(cObject)
+    if "table" == strType then
+        --Check table with class Name
+        if rawget(cObject, "__cname") then
+            if "string" = type(cObject.__cname)
+                strName = strName.."[class:"..cObject.__cname.."]"
+            end
+        elseif rawget(cObject, "class") then
+            if "string" == type(cObject.class) then
+                strName = strName.."[class:"..cObject.class.."]"
+            end
+        else if rawget--xzxtodo
+        end
+    end
     
 
 
