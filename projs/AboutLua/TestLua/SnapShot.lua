@@ -184,6 +184,29 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         end
 
         -- Check if table is _G.
+        if cObject == _G then
+            strName = strName.."[_G]"
+        end
+
+        -- Get metatable
+        local bWeakK = false
+        local bWeakV = false
+        local cMt = getmetatable(cObject)
+        if cMt then
+            -- Check mode
+            local strMode = rawget(cMt, "__mode")
+            if strMode then
+                if string.find(strMode, "k") then
+                    bWeakK = true
+                end
+
+                if string.find(strMode, "v") then
+                    bWeakV = true
+                end
+            end
+        end
+
+        --xzxtodo
 
     end
     
