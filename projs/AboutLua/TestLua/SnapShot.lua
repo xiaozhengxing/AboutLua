@@ -206,6 +206,45 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
             end
         end
 
+        -- Add reference and name
+        cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
+        if cNameInfoContainer[cObject] then
+            return 
+        end
+
+        --Set name
+        cNameInfoContainer[cObject] = strName
+
+        -- Dump table key and value
+        for k, v in pairs(cObject) do
+            -- Check key type
+            local strKeyType = type(k)
+            if "table" == strKeyType then
+                if not bWeakK then--递归调用
+                    CollectObjectReferenceInMemory(strName..".[table:key.table]", k, cDumpInfoContainer)
+                end
+                
+                if not bWeakV then
+                    CollectObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            elseif "function" == strKeyType then
+                if not bWeakK then
+                    CollectObjectReferenceInMemory(strName..".[talbe:key.function]", k, cDumpInfoContainer)
+                end
+
+                if not bWeakV then
+                    CollectObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
+                end
+            elseif "thread" == strKeyType then
+                if not bWeakK then
+                    CollectObjectReferenceInMemory(strName..".[table:key.thread]", k, cDumpInfoContainer)
+                end
+
+                --xzxtodo
+            end
+
+        end
+
         --xzxtodo
 
     end
