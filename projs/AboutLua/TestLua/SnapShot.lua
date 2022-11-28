@@ -291,12 +291,82 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         end
 
         -- Dump evnviroment table.
+        local getfenv = debug.getfenv
+        if getfenv then 
+            local cEnv = getfenv(cObject)
+            if cEnv then
+                CollectObjectReferenceInMemory(strName..".[function:environment]", cEnv, cDumpInfoContainer)
+            end
+        end
+    elseif "thread" == strType then
+        --Add reference and name
+        cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
+        if cNameInfoContainer[cObject] then
+            return 
+        end
 
+        -- Set name
+        cNameInfoContainer[cObject] = strName
 
+        -- Dump evnvironment table
+        local getfenv = debug.getfenv
+        if getfenv then 
+            local cEnv = getfenv(cObject)
+            if cEnv then
+                CollectObjectReferenceInMemory(strName..".[thread:environment]", cEnv, cDumpInfoContainer)
+            end
+        end
 
+        -- Dump metatable
+        local cMt = getmetatable(cObject)
+        if cMt then
+            CollectObjectReferenceInMemory(strName..".[thread:metatable]", cMt, cDumpInfoContainer)
+        end
+    elseif "userdata" == strtype then
+        --Add reference and name
+        cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
+        if cNameInfoContainer[cObject] then
+            return 
+        end
 
-        --xzxtodo
+        -- Set name
+        cNameInfoContainer[cObject] = strName
+        
+        -- Dump evnvironment table
+        local getfenv = debug.getfenv
+        if getfenv then 
+            local cEnv = getfenv(cObject)
+            if cEnv then
+                CollectObjectReferenceInMemory(strName..".[userdata:environment]", cEnv, cDumpInfoContainer)
+            end
+        end
 
+        -- Dump metatable
+        local cMt = getmetatable(cObject)
+        if cMt then
+            CollectObjectReferenceInMemory(strName..".[userdata:metatable]", cMt, cDumpInfoContainer)
+        end
+    elseif "string" == strType then
+        --Add reference and name
+        cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
+        if cNameInfoContainer[cObject] then
+            return 
+        end
+
+        --set Name
+        cNameInfoContainer[cObject] = strName.."["..strtype.."]"
+    else
+        --For "number" and "boolean".
+        --Add reference and name
+        --[[
+        cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
+        if cNameInfoContainer[cObject] then
+            return 
+        end
+
+        --set Name
+        cNameInfoContainer[cObject] = strName.."["..strtype..":"..tostring(cObject).."]"
+        --]]
     end
     
 
