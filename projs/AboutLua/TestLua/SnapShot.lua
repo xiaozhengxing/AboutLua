@@ -506,6 +506,44 @@ local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoC
             CollectSingleObjectReferenceInMemory(strName..".[metatable]", cMt, cDumpInfoContainer)
         end
     elseif "function" == strType then
+        -- Get function info.
+        local cDInfo = debug.getinfo(cObject, "Su")
+        local cCombinedName = strName.."[line:"..tostring(cDInfo.linedefined) .. "@file:"..cDInfo.short_src.."]"
+
+        -- Check if the specified object
+        if cExistTag[cObject] and (not cNameAllAlias[cCombinedName]) then
+            cNameAllAlias[cCombinedName] = true
+        end
+
+        --write this info
+        if cAccessTag[cObject] then
+            return
+        end
+
+        --set name
+        cAccessTag[cObject] = true
+
+        --Get upvalues
+        local nUpsNum = cDInfo.nups
+        for i = 1, nUpsNum do
+            local strUpName, cUpValue = debug.getupvalue(cObject, i)
+            local strUpValueType = type(cUpValue)
+            --print(strUpName, cUpValue)
+            if "table" == strUpValueType then
+                CollectSingleObjectReferenceInMemory(strName..".[ups:table:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            elseif "function" == strUpValueType then
+                CollectSingleObjectReferenceInMemory(strName..".[ups:function:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            elseif "thread" == strUpValueType then 
+                CollectSingleObjectReferenceInMemory(strName..".[ups:thread:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            elseif "userdata" == strUpValueType then
+                CollectSingleObjectReferenceInMemory(strName..".[ups:userdata:"..strUpName.."]", cUpValue, cDumpInfoContainer)
+            end
+        end
+
+        --Dump environment table
+        
+        
+        
         --xzxtodo
     end
     
