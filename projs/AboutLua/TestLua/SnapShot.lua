@@ -5,7 +5,7 @@ local cConfig =
 {
     m_bAllMemoryRefFileAddTime = true,--保存的文件名加上时间戳
     m_bSingleMemoryRefFileAddTime = true,
-    m_bCompareMemoryRefFileAddTime = true,
+    m_bComparedMemoryRefFileAddTime = true,
 }
 
 local function FormatDateTimeNow()
@@ -624,8 +624,100 @@ end
 
 -- The base method to dump a mem ref info result into a file.
 -- strSavePath -- The save path of the file to store the result, must be a directory path, If nil or "" then the result will output to console as print does.
+-- strExtraFileName -- If you want to add extra info append to the end of the result file, give a string, nothing will do if set to nil or "",
+-- nMaxRecords -- How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result,
+-- strRootObjectName -- The header info to show the root object Name, can be nil 
+-- cRootObject -- The header info to show the root object address, can be nil
+-- cDumpInfoResultsBase -- The base dumped mem info result, nil means no compare and only output cDumpInfoResults, otherwise to compare with cDumpInfoResults.
+-- cDumpInfoResults -- The compared dumped mem info result, dump itself only if cDumpInfoResultsBase is nil, otherwise dump Compared results with cDumpInfoResultsBase.
+local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject, cDumpInfoResultsBase, cDumpInfoResults)
+    --Check results
+    if not cDumpInfoResults then
+        return
+    end
 
-local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords, strRootObjectName, cRootObject, cDumpInfoResultsBase, cDumpInfoResults)
+    -- Get time format string
+    local strDateTime = FormatDateTimeNow()
+
+    -- Collect memory info.
+    local cRefInfoBase = (cDumpInfoResultsBase and cDumpInfoResultsBase.m_cObjectReferenceCount) or nil 
+    local cNameInfoBase = (cDumpInfoResultsBase and cDumpInfoResultsBase.m_cObjectAdressToName) or nil 
+    local cRefInfo = cDumpInfoResults.m_cObjectReferenceCount
+    local cNameInfo = cDumpInfoResults.m_cObjectAdressToName
+
+    --create a cache result to sort by ref count
+    local cRes = {}
+    local nIdx = 0
+    for k in pairs(cRefInfo) do
+        nIdx = nIdx + 1
+        cRes[nIdx] = k
+    end
+
+    -- sort result
+    table.sort(cRes, function(l, r)
+        return cRefInfo[l] > cRefInfo[r]
+    end)
+
+    --save reuslt to file
+    local bOutputFile = strSavePath and (string.line(strSavePath) > 0)
+    local cOutputHandle = nil 
+    local cOutputEntry = print
+
+    if bOutputFile then
+        --Check save path affix
+        local strAffix = string.sub(strSavePath, -1)
+        if ("/" ~= strAffix) and ("\\" ~= strAffix) then
+            strSavePath = strSavePath.."/"
+        end
+
+        --Combine file name
+        local strFileName = strSavePath .. "LuaMemRefInfo-All"
+        if (not strExtraFileName) or (0 == string.len(strExtraFileName)) then
+            if cDumpInfoResultsBase then
+                if cConfig.m_bComparedMemoryRefFileAddTime then
+                    strFileName = strFileName.."-["..strDateTime.."].txt"
+                else
+                    strFileName = strFileName..".txt"
+                end
+            else
+                if cConfig.m_bAllMemoryRefFileAddTime then
+                    strFileName = strFileName.."-["..strDateTime.."].txt"
+                else
+                    strFileName = strFileName..".txt"
+                end
+            end
+        else
+            if cDumpInfoResultsBase then 
+                if cConfig.m_bComparedMemoryRefFileAddTime then
+                    strFileName = strFileName.."-["..strDateTime.."]-["..strExtraFileName.."].txt"
+                else
+                    strFileName = strFileName.."-["..strExtraFileName.."].txt"
+                end
+            else
+                if cConfig.m_bAllMemoryRefFileAddTime then
+                    strFileName = strFileName.."-["..strDateTime.."]-["..strExtraFileName.."].txt"
+                else
+                    strFileName = strFileName.."-["..strExtraFileName.."].txt"
+                end
+            end
+        end
+
+        local cFile = assert(io.open(strFileName, "w"))
+        cOutputHandle = cFile
+        cOutputEntry = cfile.write
+    end
+
+    local cOutputer = function(strContent)
+        if cOutputHandle then
+            cOutputEntry(cOutputHandle, strContent)
+        else
+            cOutputEntry(strRefCount)
+        end
+    end
+
+    --Write the header
+    
+    --xzxtodo
 end
 
 
