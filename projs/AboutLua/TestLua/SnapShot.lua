@@ -605,18 +605,28 @@ local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoC
             CollectSingleObjectReferenceInMemory(strName..".[userdata:metatable]", cMt, cDumpInfoContainer)
         end
     elseif "string" == strType then
-        --xzxtodo
+        --Check if the specified object
+        if cExistTag[cObject] and (not cNameAllAlias[strName]) then
+            cNameAllAlias[strName] = true
+        end
+
+        --Add reference and name
+        if cAccessTag[cObject] then
+            return
+        end
+
+        -- Get this name
+        cAccessTag[cObject] = true
+    else
+        --For "number" and "boolean" type, they are not object type, skip.
     end
-    
-
-
-
-    --xzxtodo
 end
 
+-- The base method to dump a mem ref info result into a file.
+-- strSavePath -- The save path of the file to store the result, must be a directory path, If nil or "" then the result will output to console as print does.
 
-
-
+local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords, strRootObjectName, cRootObject, cDumpInfoResultsBase, cDumpInfoResults)
+end
 
 
 
