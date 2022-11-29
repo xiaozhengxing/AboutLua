@@ -729,6 +729,20 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
     end
 
     cOutputer("------------------------------------------------\n")
+    cOutputer("-- [Table/Function/String Address/Name]\t[Reference Path]\t[Reference Count]\n")
+    cOutputer("------------------------------------------------\n")
+
+    if strRootObjectName and cRootObject then
+        if "string" == type(cRootObject) then
+            cOutputer("--From Root Object: \""..tostring(cRootObject).."\"("..strRootObjectName..")\n")
+        else
+            cOutputer("--From Root Object: "..GetOriginalToStringResult(cRootObject).." ("..strRootObjectName..")\n")
+        end
+    end
+
+    -- Save each info
+    
+
 
     
     
