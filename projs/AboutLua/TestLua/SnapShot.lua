@@ -715,7 +715,22 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
         end
     end
 
-    --Write the header
+    --Write table header
+    if cDumpInfoResultsBase then
+        cOutputer("------------------------------------------------\n")
+        cOutputer("---This is compared memory information.\n")
+
+        cOutputer("------------------------------------------------\n")
+        cOutputer("-- Collect base memory reference at line:"..tostring(cDumpInfoResultsBase.m_nCurrentLine).."@file:"..cDumpInfoResultsBase.m_strShortSrc.."\n")
+        cOutputer("-- Collect compared memory reference at line:"..tostring(cDumpInfoResults.m_nCurrentLine).."@file:"..cDumpInfoResults.m_strShortSrc.."\n")
+    else
+        cOutputer("------------------------------------------------\n")
+        cOutputer("-- Collect compared memory reference at line:"..tostring(cDumpInfoResults.m_nCurrentLine).."@file:"..cDumpInfoResults.m_strShortSrc.."\n")
+    end
+
+    cOutputer("------------------------------------------------\n")
+
+    
     
     --xzxtodo
 end
