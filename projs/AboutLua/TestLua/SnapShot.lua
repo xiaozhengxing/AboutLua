@@ -845,8 +845,34 @@ local function OutputMemorySnapshotSingleObject(strSavePath, strExtraFileName, n
     cOutputer("--------------------------------------------------------\n")
 
     -- Calculate reference count.
-    --xzxtodo
+    local nCount = 0
+    for k in pairs(cObjectAliasName) do
+        nCount = nCount + 1
+    end
 
+    --Output refrence count.
+    cOutputer("--For Object: "..cDumpInfoResults.m_strAddressName.."("..cDumpInfoResults.m_strObjectName.."), have "..tostring(nCount).." reference in total.\n")
+    cOutputer("--------------------------------------------------------\n")
 
+    --Save each info.
+    for i, k in pairs(cObjectAliasName) do
+        if (nMaxRecords > 0) then
+            if(i <= nMaxRecords) then
+                cOutputer(k.."\n")
+            end
+        else
+            cOutputer(k.."\n")
+        end
+    end
+
+    if bOutputFile then
+        io.close(cOutputHandle)
+        cOutputHandle = nil
+    end
 end
+
+local function OutputFilterdResult(strFilePath, strFilter, bInCludeFilter, bOutputFile)
+    --xzxtodo
+end
+--xzxtodo
 
