@@ -950,8 +950,41 @@ local function OutputFilterdResult(strFilePath, strFilter, bIncludeFilter, bOutp
     end
 end
 
-local function DumpMemorySnapShot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject)
---xzxtodo
+-- Dump memory reference at current time. 
+-- strSavePath - The save path of the file to store the result, must be a directory path, If nil or "" then the result will output to console as print does.
+-- strExtraFileName - If you want to add extra info append to the end of the result file, give a string, nothing will do if set to nil or "".
+-- nMaxRecords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
+-- strRootObjectName - The root object name that start to search, default is "_G" if leave this to nil
+-- cRootObject - The root object that start to search, default is _G if leave this to nil
+local function DumpMemorySnapShot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject)--**********************************
+    -- Get time format string.
+    local strDateTime = FormatDateTimeNow()
+
+    -- Check root object
+    if cRootObject then
+        if (not strRootObjectName) or (0 == string.len(strRootObjectName)) then
+            strRootObjectName = tostring(cRootObject)
+        end
+    else
+        cRootObject = debug.getregistry()--这里怎么是registry, 注意registry[2]是 _G
+        strRootObjectName = "registry"
+    end
+
+    --Create container
+    local cDumpInfoContainer = CreateObjectReferenceInfoContainer()
+    local cStackInfo = debug.getinfo(2, "Sl")
+    if cStackInfo then
+        cDumpInfoContainer.m_strShortSrc = cStackInfo.short_src
+        cDumpInfoContainer.m_nCurrentLine = cStackInfo.currentline
+    end
+
+    --Collect memory info.
+    CollectObjectReferenceInMemory(strRootObjectName, cRootObject, cDumpInfoContainer)
+
+    --Dump the result
+    OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject, nil, cDumpInfoContainer)
 end
+
+--xzxtodo
 
 
