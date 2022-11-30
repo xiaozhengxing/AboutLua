@@ -741,7 +741,29 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
     end
 
     -- Save each info
-    
+    for i, v in ipairs(cRes) do
+        if (not cDumpInfoResultsBase) or (not cRefInfoBase[v]) then
+            if (nMaxRecords > 0) then
+                if (i <= nMaxRecords) then
+                    if "string" == type(v) then
+                        local strOrgString = tostring(v)
+                        local nPattenBegin, nPattenEnd = string.find(strOrgString, "string: \".*\"")
+                        if ((not cDumpInfoResultsBase) and ((nil == nPattenBegin) or (nil == nPattenEnd))) then
+                            local strRepString = string.gsub(strOrgString, "([\n\r])", "\\n")
+                            cOutputer("string: \""..strRepString.."\"\t"..cNameInfo[v].."\t"..tostring(cRefInfo[v].."\n"))
+                        else
+                            cOutputer(tostring(v).."\t"..cNameInfo[v].."\t"..tostring(cRefInfo[v]).."\n")
+                        end
+                    else
+                        cOutputer(GetOriginalToStringResult(v).."\t"..cNameInfo[v].."\t"..tostring(cRefInfo[v]).."\n")
+                    end
+                end
+            else
+                --xzxtodo
+            end
+        end
+    end
+
 
 
     
