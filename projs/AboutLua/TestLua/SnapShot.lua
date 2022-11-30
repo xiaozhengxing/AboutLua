@@ -759,17 +759,94 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
                     end
                 end
             else
-                --xzxtodo
+                if "string" == type(v) then
+                    local strOrgString = tostring(v)
+                    local nPattenBegin, nPattenEnd = string.find(strOrgString, "string: \".*\"")
+                    if ((not cDumpInfoResultsBase) and ((nil == nPattenBegin) or (nil == nPattenEnd))) then
+                        local strRepString = string.gsub(strOrgString, "([\n\r])", "\\n")
+                        cOutputer("string: \""..strRepString.."\"\t"..cNameInfo[v].."\t"..tostring(cRefInfo[v].."\n"))
+                    else
+                        cOutputer(tostring(v).."\t"..cNameInfo[v].."\t"..tostring(cRefInfo[v]).."\n")
+                    end
+                else
+                    cOutputer(GetOriginalToStringResult(v).."\t"..cNameInfo[v].."\t"..tostring(cRefInfo[v]).."\n")
+                end
             end
         end
     end
 
-
-
-    
-    
-    --xzxtodo
+    if bOutputFile then
+        io.close(cOutputHandle)
+        cOutputHandle = nil 
+    end
 end
 
+--The base method to dump a mem ref info result of a single object into a file
+-- strSavePath - The save path of the file to store the result, must be a directory path, If nil or "" then the result will output to console as print does.
+-- strExtraFileName - If you want to add extra info append to the end of the result file, give a string, nothing will do if set to nil or "".
+-- nMaxRescords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
+-- cDumpInfoResults - The dumped results.
+local function OutputMemorySnapshotSingleObject(strSavePath, strExtraFileName, nMaxRecords, cDumpInfoResults)
+    --Check results
+    if not cDumpInfoResults then
+        return
+    end
 
+    -- Get time format string
+    local strDateTime = FormatDateTimeNow()
+
+    -- Collect memory info
+    local cObjectAliasName = cDumpInfoResults.m_cObjectAliasName
+
+    --Save result to file
+    local bOutputFile = strSavePath and (string.len(strSavePath) > 0)
+    local cOutputHandle = nil 
+    local cOutputEntry = print
+
+    if bOutputFile then
+		-- Check save path affix.
+		local strAffix = string.sub(strSavePath, -1)
+		if ("/" ~= strAffix) and ("\\" ~= strAffix) then
+			strSavePath = strSavePath .. "/"
+		end
+
+		-- Combine file name.
+		local strFileName = strSavePath .. "LuaMemRefInfo-Single"
+		if (not strExtraFileName) or (0 == string.len(strExtraFileName)) then
+            if cConfig.m_bSingleMemoryRefFileAddTime then
+                strFileName = strFileName .. "-[" .. strDateTime .. "].txt"
+            else
+                strFileName = strFileName .. ".txt"
+            end
+		else
+            if cConfig.m_bSingleMemoryRefFileAddTime then
+                strFileName = strFileName .. "-[" .. strDateTime .. "]-[" .. strExtraFileName .. "].txt"
+            else
+                strFileName = strFileName .. "-[" .. strExtraFileName .. "].txt"
+            end
+		end
+
+		local cFile = assert(io.open(strFileName, "w"))
+		cOutputHandle = cFile
+		cOutputEntry = cFile.write
+	end
+
+    local cOutputer = function(strContent)
+        if cOutputHandle then
+            cOutputEntry(cOutputHandle, strContent)
+        else
+            cOutputEntry(strContent)
+        end
+    end
+
+    --write table header
+    cOutputer("--------------------------------------------------------\n")
+    cOutputer("-- Collect single object memory reference at line:"..tostring(cDumpInfoResults.m_nCurrentLine).."@file:"..cDumpInfoResults.m_strShortSrc .. "\n")
+    cOutputer("--------------------------------------------------------\n")
+
+    -- Calculate reference count.
+    --xzxtodo
+
+
+end
 
