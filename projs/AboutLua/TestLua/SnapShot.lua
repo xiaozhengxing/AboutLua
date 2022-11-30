@@ -704,7 +704,7 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
 
         local cFile = assert(io.open(strFileName, "w"))
         cOutputHandle = cFile
-        cOutputEntry = cfile.write
+        cOutputEntry = cFile.write
     end
 
     local cOutputer = function(strContent)
@@ -784,7 +784,7 @@ end
 --The base method to dump a mem ref info result of a single object into a file
 -- strSavePath - The save path of the file to store the result, must be a directory path, If nil or "" then the result will output to console as print does.
 -- strExtraFileName - If you want to add extra info append to the end of the result file, give a string, nothing will do if set to nil or "".
--- nMaxRescords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
+-- nMaxRecords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
 -- cDumpInfoResults - The dumped results.
 local function OutputMemorySnapshotSingleObject(strSavePath, strExtraFileName, nMaxRecords, cDumpInfoResults)
     --Check results
@@ -871,8 +871,87 @@ local function OutputMemorySnapshotSingleObject(strSavePath, strExtraFileName, n
     end
 end
 
-local function OutputFilterdResult(strFilePath, strFilter, bInCludeFilter, bOutputFile)
-    --xzxtodo
+--Filterer an existing result file and output it.
+--strFilePath - The exsiting result file
+--strFilter - The filter string
+--bIncludeFilter - Include(true) or exclude(false) the filter
+--bOutputFile - Output to file(true) or console(false)
+local function OutputFilterdResult(strFilePath, strFilter, bIncludeFilter, bOutputFile)
+    if (not strFilePath) or (0 == string.len(strFilePath)) then
+        print("You need to specify a file path")
+        return
+    end
+
+    if (not strFilter) or (0 == string.len(strFilter)) then
+        print("You need to specify a filter string")
+        return 
+    end
+
+    --Read file
+    local cFilteredResult = {}
+    local cReadFile = assert(io.open(strFilePath, "rb"))
+    for strLine in cReadFile:lines() do 
+        local nBegin, nEnd = string.find(strLine, strFilter)
+        if Begin and nEnd then
+            if bIncludeFilter then
+                nBegin, nEnd = string.find(strLine, "[\r\n]")
+                if nBegin and nEnd and (string.len(strLine) == nEnd) then
+                    table.insert(cFilteredResult, string.sub(strLine, 1, nBegin - 1))
+                else
+                    table.insert(cFilteredResult, strLine)
+                end
+            end    
+        else
+            if not bIncludeFilter then
+                nBegin, nEnd = string.find(strLine, "[\r\n]")
+                if nBegin and nEnd and (string.len(strLine) == nEnd) then
+                    table.insert(cFilteredResult, string.sub(strLine, 1, nBegin - 1))
+                else
+				    table.insert(cFilteredResult, strLine)
+                end
+            end
+        end
+    end
+
+    -- Close and clear read file handle
+    io.close(cReadFile)
+    cReadFile = nil
+
+    -- write filtered result
+    local cOutputHandle = nil 
+    local cOutputEntry = print
+
+    if bOutputFile then
+        --Combine file name
+        local _, _, strResFileName = string.find(strFilePath, "(.*)%.txt")
+		strResFileName = strResFileName .. "-Filter-" .. ((bIncludeFilter and "I") or "E") .. "-[" .. strFilter .. "].txt"
+
+        local cFile = assert(io.open(strResFileName, "w"))
+        cOutputHandle = cFile
+        cOutputEntry = cFile.write
+    end
+
+    local cOutputer = function(strContent)
+        if cOutputHandle then
+            cOutputEntry(cOutputHandle, strContent)
+        else
+            cOutputEntry(strContent)
+        end
+    end
+
+    --Output result
+    for i, v in  ipairs(cFilteredResult) do
+        cOutputer(v.."\n")
+    end
+
+    if bOutputFile then
+        io.close(cOutputHandle)
+        cOutputHandle = nil
+    end
 end
+
+local function DumpMemorySnapShot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject)
 --xzxtodo
+end
+
 
