@@ -1030,8 +1030,41 @@ local function DumpMemorySnapShotSingleObject(strSavePath, strExtraFileName, nMa
     --Get time format string.
     local strDateTime = FormatDateTimeNow()
 
-    --xzxtodo
+    --Create container
+    local cDumpInfoContainer = CreateSingleObjectReferenceInfoContainer(strObjectName, cObject)
+    local cStackInfo = debug.getinfo(2, "Sl")
+    if cStackInfo then
+        cDumpInfoContainer.m_strShortSrc = cStackInfo.short_src
+        cDumpInfoContainer.m_nCurrentLine = cStackInfo.currentline
+    end
+
+    --Collect memory info.
+    CollectSingleObjectReferenceInMemory("registry", debug.getregistry(), cDumpInfoContainer)
+
+    --Dump the result
+    OutputMemorySnapshotSingleObject(strSavePath, strExtraFileName, nMaxRecords, cDumpInfoContainer)
 end
---xzxtodo
 
+--Return methods
+local cPublications = {m_cConfig = nil, m_cMethods={}, m_cHelpers = {}, m_cBases = {}}
 
+cPublications.m_cConfig = cConfig
+
+cPublications.m_cMethods.DumpMemorySnapshot = DumpMemorySnapshot
+cPublications.m_cMethods.DumpMemorySnapshotCompared = DumpMemorySnapshotCompared
+cPublications.m_cMethods.DumpMemorySnapshotComparedFile = DumpMemorySnapshotComparedFile
+cPublications.m_cMethods.DumpMemorySnapshotSingleObject = DumpMemorySnapshotSingleObject
+
+cPublications.m_cHelpers.FormatDateTimeNow = FormatDateTimeNow
+cPublications.m_cHelpers.GetOriginalToStringResult = GetOriginalToStringResult
+
+cPublications.m_cBases.CreateObjectReferenceInfoContainer = CreateObjectReferenceInfoContainer
+cPublications.m_cBases.CreateObjectReferenceInfoContainerFromFile = CreateObjectReferenceInfoContainerFromFile
+cPublications.m_cBases.CreateSingleObjectReferenceInfoContainer = CreateSingleObjectReferenceInfoContainer
+cPublications.m_cBases.CollectObjectReferenceInMemory = CollectObjectReferenceInMemory
+cPublications.m_cBases.CollectSingleObjectReferenceInMemory = CollectSingleObjectReferenceInMemory
+cPublications.m_cBases.OutputMemorySnapshot = OutputMemorySnapshot
+cPublications.m_cBases.OutputMemorySnapshotSingleObject = OutputMemorySnapshotSingleObject
+cPublications.m_cBases.OutputFilteredResult = OutputFilteredResult
+
+return cPublications
