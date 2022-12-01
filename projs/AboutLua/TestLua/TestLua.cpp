@@ -712,6 +712,17 @@ void mainTestLuaInLua()
         
         return;
     }
+
+    iRet = luaL_dofile(L, "DoSnapShot.lua");
+    if (iRet)
+    {
+        cout << "load file DoSnapShot.lua error " << iRet << endl;
+        const char* pErrorMsg = lua_tostring(L, -1);
+        cout << pErrorMsg << endl;
+        lua_close(L);
+        
+        return;
+    }
 }
 
 
