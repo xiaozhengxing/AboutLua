@@ -54,8 +54,8 @@ local function CreateObjectReferenceInfoContainer()
     setmetatable(cObjectAddressToName, {__mode="k"})
 
     --set members
-    cContainer.m_cObjectReferenceCount = cObjectReferenceCount
-    cContainer.m_cObjectAdressToName = cObjectAddressToName
+    cContainer.m_cObjectReferenceCount = cObjectReferenceCount --table[object] = cnt 可以认为是引用计数
+    cContainer.m_cObjectAdressToName = cObjectAddressToName --table[object] = name
 
     --For Stack info
     cContainer.m_nStackLevel = -1
@@ -150,7 +150,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         cDumpInfoContainer = CreateObjectReferenceInfoContainer()
     end
 
-    -- check stack
+    -- check stack 这里好像从来都不会执行
     if cDumpInfoContainer.m_nStackLevel > 0 then
         local cStackInfo = debug.getinfo(cDumpInfoContainer.m_nStackLevel, "Sl")
         if cStackInfo then
@@ -168,7 +168,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
     local strType = type(cObject)
     
     if "table" == strType then --处理table
-        --Check table with class Name
+        --Check table with class Name --这里的代码不会执行
         if rawget(cObject, "__cname") then
             if "string" == type(cObject.__cname) then
                 strName = strName.."[class:"..cObject.__cname.."]"
@@ -208,7 +208,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
 
         -- Add reference and name
         cRefInfoContainer[cObject] = (cRefInfoContainer[cObject] and (cRefInfoContainer[cObject] + 1)) or 1
-        if cNameInfoContainer[cObject] then
+        if cNameInfoContainer[cObject] then--已经遍历过,无需再遍历
             return 
         end
 
@@ -219,7 +219,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
         for k, v in pairs(cObject) do
             -- Check key type
             local strKeyType = type(k)
-            if "table" == strKeyType then
+            if "table" == strKeyType then--注意，这里的key和value都会去检测
                 if not bWeakK then--递归调用
                     CollectObjectReferenceInMemory(strName..".[table:key.table]", k, cDumpInfoContainer)
                 end
@@ -251,7 +251,8 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
                 if not bWeakV then 
                     CollectObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
                 end
-            else
+            else--比如 registry.2[_G]走的就是这里， 注意这里只检测value,不检测key
+                print(strKeyType, k)
                 CollectObjectReferenceInMemory(strName.."."..k, v, cDumpInfoContainer)
             end
         end
@@ -650,7 +651,7 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
     local nIdx = 0
     for k in pairs(cRefInfo) do
         nIdx = nIdx + 1
-        cRes[nIdx] = k
+        cRes[nIdx] = k--注意这里的k是m_cObjectReferenceCount中的object
     end
 
     -- sort result
@@ -659,7 +660,7 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
     end)
 
     --save reuslt to file
-    local bOutputFile = strSavePath and (string.line(strSavePath) > 0)
+    local bOutputFile = strSavePath and (string.len(strSavePath) > 0)
     local cOutputHandle = nil 
     local cOutputEntry = print
 
@@ -742,7 +743,7 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, 
 
     -- Save each info
     for i, v in ipairs(cRes) do
-        if (not cDumpInfoResultsBase) or (not cRefInfoBase[v]) then
+        if (not cDumpInfoResultsBase) or (not cRefInfoBase[v]) then--没有dumpBase或者 DumpBase.m_cObjectReferenceCount中不存在该object
             if (nMaxRecords > 0) then
                 if (i <= nMaxRecords) then
                     if "string" == type(v) then
@@ -956,7 +957,7 @@ end
 -- nMaxRecords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
 -- strRootObjectName - The root object name that start to search, default is "_G" if leave this to nil
 -- cRootObject - The root object that start to search, default is _G if leave this to nil
-local function DumpMemorySnapShot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject)--**********************************
+local function DumpMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, strRootObjectName, cRootObject)--**********************************
     -- Get time format string.
     local strDateTime = FormatDateTimeNow()
 
@@ -975,10 +976,12 @@ local function DumpMemorySnapShot(strSavePath, strExtraFileName, nMaxRecords, st
     local cStackInfo = debug.getinfo(2, "Sl")
     if cStackInfo then
         cDumpInfoContainer.m_strShortSrc = cStackInfo.short_src
+        --print("1 "..cStackInfo.short_src) -- "DoSnapShot.lua"
         cDumpInfoContainer.m_nCurrentLine = cStackInfo.currentline
+        --print("2 "..cStackInfo.currentline) --17
     end
 
-    --Collect memory info.
+    --Collect memory info. xzxtodo
     CollectObjectReferenceInMemory(strRootObjectName, cRootObject, cDumpInfoContainer)
 
     --Dump the result
@@ -991,7 +994,7 @@ end
 -- nMaxRecords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
 -- cResultBefore - The base dumped results.
 -- cResultAfter - The compared dumped results.
-local function DumpMemorySnapShotCompared(strSavePath, strExtraFileName, nMaxRecords, cResultBefore, cResultAfter)
+local function DumpMemorySnapshotCompared(strSavePath, strExtraFileName, nMaxRecords, cResultBefore, cResultAfter)
     --Dump the result
     OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRecords, nil, nil, cResultBefore, cResultAfter)
 end
@@ -1002,7 +1005,7 @@ end
 -- nMaxRecords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
 -- strResultFilePathBefore - The base dumped results file.
 -- strResultFilePathAfter - The compared dumped results file.
-local function DumpMemorySnapShotComparedFile(strSavePath, strExtraFileName, nMaxRecords, strResultFilePathBefore, strResultFilePathAfter)
+local function DumpMemorySnapshotComparedFile(strSavePath, strExtraFileName, nMaxRecords, strResultFilePathBefore, strResultFilePathAfter)
     --Read result from file
     local cResultBefore = CreateObjectReferenceInfoContainerFromFile(strResultFilePathBefore)
     local cResultAfter = CreateObjectReferenceInfoContainerFromFile(strResultFilePathAfter)
@@ -1017,7 +1020,7 @@ end
 -- nMaxRecords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
 -- strObjectName - The object name reference you want to dump.
 -- cObject - The object reference you want to dump.
-local function DumpMemorySnapShotSingleObject(strSavePath, strExtraFileName, nMaxRecords, strObjectName, cObject)
+local function DumpMemorySnapshotSingleObject(strSavePath, strExtraFileName, nMaxRecords, strObjectName, cObject)
     --Check object
     if not cObject then
         return
@@ -1066,5 +1069,6 @@ cPublications.m_cBases.CollectSingleObjectReferenceInMemory = CollectSingleObjec
 cPublications.m_cBases.OutputMemorySnapshot = OutputMemorySnapshot
 cPublications.m_cBases.OutputMemorySnapshotSingleObject = OutputMemorySnapshotSingleObject
 cPublications.m_cBases.OutputFilteredResult = OutputFilteredResult
+
 
 return cPublications
