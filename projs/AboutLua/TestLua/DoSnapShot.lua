@@ -17,3 +17,22 @@ collectgarbage("collect")
 print(mri.m_cMethods.DumpMemorySnapshot)
 mri.m_cMethods.DumpMemorySnapshot("./", "1-Before", -1)
 
+local author = 
+{
+	Name = "yaukeywang",
+	Job = "Game Developer",
+	Hobby = "Game, Travel, Gym",
+	City = "Beijing",
+	Country = "China",
+	Ask = function (question)
+	    return "My answer is for you quesiton:" .. quesiton.."."
+    end
+}
+
+_G.Author = author
+
+-- Dump memory SnapShot again
+collectgarbage("collect")
+mri.m_cMethods.DumpMemorySnapshot("./", "2-After", -1)
+
+

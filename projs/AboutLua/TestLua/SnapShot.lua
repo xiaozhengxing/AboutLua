@@ -252,7 +252,7 @@ local function CollectObjectReferenceInMemory(strName, cObject, cDumpInfoContain
                     CollectObjectReferenceInMemory(strName..".[table:value]", v, cDumpInfoContainer)
                 end
             else--比如 registry.2[_G]走的就是这里， 注意这里只检测value,不检测key
-                print(strKeyType, k)
+                --print(strKeyType, k)
                 CollectObjectReferenceInMemory(strName.."."..k, v, cDumpInfoContainer)
             end
         end
