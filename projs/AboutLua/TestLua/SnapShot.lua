@@ -133,7 +133,7 @@ local function CreateSingleObjectReferenceInfoContainer(strObjectName, cObject)
 	-- Init with object values.
 	cContainer.m_strObjectName = strObjectName
 	cContainer.m_strAddressName = (("string" == type(cObject)) and ("\"" .. tostring(cObject) .. "\"")) or GetOriginalToStringResult(cObject)
-	cContainer.m_cObjectExistTag[cObject] = true
+	cContainer.m_cObjectExistTag[cObject] = true--这里只保存cObject(SingleObject)
 
 	return cContainer
 end
@@ -408,7 +408,7 @@ local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoC
 	
 	local strType = type(cObject)
 	if "table" == strType then
-		-- Check table with class name.
+		-- Check table with class name.这里的代码不会进入
 		if rawget(cObject, "__cname") then
 			if "string" == type(cObject.__cname) then
 				strName = strName .. "[class:" .. cObject.__cname .. "]"
@@ -447,9 +447,9 @@ local function CollectSingleObjectReferenceInMemory(strName, cObject, cDumpInfoC
 			end
 		end
 
-		-- Check if the specified object.
+		-- Check if the specified object. 注意这个cExistTag[cObject]里面只有需要查找的cObject
 		if cExistTag[cObject] and (not cNameAllAlias[strName]) then
-			cNameAllAlias[strName] = true
+			cNameAllAlias[strName] = true --填充cObject的别名
 		end
 
 		-- Add reference and name.
@@ -854,7 +854,7 @@ local function OutputMemorySnapshotSingleObject(strSavePath, strExtraFileName, n
 	cOutputer("-- For Object: " .. cDumpInfoResults.m_strAddressName .. " (" .. cDumpInfoResults.m_strObjectName .. "), have " .. tostring(nCount) .. " reference in total.\n")
 	cOutputer("--------------------------------------------------------\n")
 
-	-- Save each info.
+	-- Save each info. 这里有点错误, k是个bool值
 	for i, k in pairs(cObjectAliasName) do
 		if (nMaxRescords > 0) then
 			if (i <= nMaxRescords) then
