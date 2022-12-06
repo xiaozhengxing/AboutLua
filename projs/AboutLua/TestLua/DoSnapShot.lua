@@ -51,7 +51,7 @@ mri.m_cMethods.DumpMemorySnapshot("./", "2-After", -1)
 collectgarbage("collect")
 mri.m_cMethods.DumpMemorySnapshotSingleObject("./", "SingleObjRef-Object", -1, "Author", _G.Author)
 
---[[
+
 -- We can also find string references.
 collectgarbage("collect")
 mri.m_cMethods.DumpMemorySnapshotSingleObject("./", "SingleObjRef-String", -1, "Author Name", "yaukeywang")
@@ -65,6 +65,7 @@ mri.m_cMethods.DumpMemorySnapshotSingleObject("./", "SingleObjRef-String", -1, "
 -- MemoryReferenceInfo.m_cMethods.DumpMemorySnapshotComparedFile(strSavePath, strExtraFileName, nMaxRescords, strResultFilePathBefore, strResultFilePathAfter)
 mri.m_cMethods.DumpMemorySnapshotComparedFile("./", "Compared", -1, "./LuaMemRefInfo-All-[1-Before].txt", "./LuaMemRefInfo-All-[2-After].txt")
 
+
 -- 按照关键字过滤一个内存快照文件然后输出到另一个文件.
 -- strFilePath - 需要被过滤输出的内存快照文件。
 -- strFilter - 过滤关键字
@@ -74,6 +75,7 @@ mri.m_cMethods.DumpMemorySnapshotComparedFile("./", "Compared", -1, "./LuaMemRef
 -- Filter all result include keywords: "Author".
 mri.m_cBases.OutputFilteredResult("./LuaMemRefInfo-All-[2-After].txt", "Author", true, true)
 
+---[[
 -- Filter all result exclude keywords: "Author".
 mri.m_cBases.OutputFilteredResult("./LuaMemRefInfo-All-[2-After].txt", "Author", false, true)
 

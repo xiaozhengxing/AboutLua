@@ -877,7 +877,7 @@ end
 -- strFilePath - The existing result file.
 -- strFilter - The filter string.
 -- bIncludeFilter - Include(true) or exclude(false) the filter.
--- bOutputFile - Output to file(true) or console(false).
+-- bOutputFile - Output to file(true) or console(false). 只是一个简单的过滤文件内容的操作
 local function OutputFilteredResult(strFilePath, strFilter, bIncludeFilter, bOutputFile)
 	if (not strFilePath) or (0 == string.len(strFilePath)) then
 		print("You need to specify a file path.")
@@ -1004,8 +1004,10 @@ end
 -- nMaxRescords - How many rescords of the results in limit to save in the file or output to the console, -1 will give all the result.
 -- strResultFilePathBefore - The base dumped results file.
 -- strResultFilePathAfter - The compared dumped results file.
+-- 需要注意的是, 两个文件是同一次运行期间保存的文件,不然表格等object的内存地方会对应不上
 local function DumpMemorySnapshotComparedFile(strSavePath, strExtraFileName, nMaxRescords, strResultFilePathBefore, strResultFilePathAfter)
 	-- Read results from file.
+	-- 可以认为是简单对比两个文件而已, 需要注意的是, 两个文件是同一次运行期间保存的文件,不然表格等object的内存地方会对应不上
 	local cResultBefore = CreateObjectReferenceInfoContainerFromFile(strResultFilePathBefore)
 	local cResultAfter = CreateObjectReferenceInfoContainerFromFile(strResultFilePathAfter)
 
