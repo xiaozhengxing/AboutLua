@@ -726,7 +726,7 @@ void mainTestLuaInLua()
 }
 
 
-void main()
+void main0()
 {
     //mainTestLuaInC();
     mainTestLuaInLua();

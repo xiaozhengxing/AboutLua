@@ -25,6 +25,17 @@ extern "C"
 
 }
 
+#define TABLE 1
+#define FUNCTION 2
+#define SOURCE 3
+#define THREAD 4
+#define USERDATA 5
+#define MARK 6
+
+static bool ismarked(lua_State* dL, const void* p)
+{
+	return true;
+}
 
 void mainSnapShot()
 {
