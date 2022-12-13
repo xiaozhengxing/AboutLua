@@ -34,6 +34,17 @@ extern "C"
 
 static bool ismarked(lua_State* dL, const void* p)
 {
+	lua_rawgetp(dL, MARK, p);//Mark 索引处为一个table, 返回table[p], p可以看做是一个light userData
+	if (lua_isnil(dL, -1))
+	{
+		lua_pop(dL, 1);
+		lua_pushboolean(dL, 1);
+		lua_rawsetp(dL, MARK, p);
+		return false;
+	}
+
+	lua_pop(dL, 1);
+
 	return true;
 }
 
